@@ -1,13 +1,17 @@
 {
   "expo": {
-    "name": "BinanceAlarm",
+    "name": "Price Ping",
     "slug": "BinanceAlarm",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.uzairjamal.priceping",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -16,10 +20,28 @@
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.uzairjamal.priceping"
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      [
+        "expo-notifications",
+        {
+          "sounds": [
+            "./assets/sounds/alarm1.mp3",
+            "./assets/sounds/alarm2.mp3"
+          ]
+        }
+      ],
+      "expo-background-task"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "ae4511eb-9ccc-4f70-8317-63c0dca0afc4"
+      }
     }
   }
 }
