@@ -460,23 +460,7 @@ If a sound change appears to have no effect, remove the PricePing app from the d
 
 PricePing receives real-time trade information from Binance through a WebSocket connection.
 
-The application uses a stream similar to:
-
-```text
-wss://fstream.binance.com/ws/btcusdt@trade
-```
-
-The trade payload contains the latest trade price in the `p` field.
-
-Example:
-
-```json
-{
-  "e": "trade",
-  "s": "BTCUSDT",
-  "p": "104250.10"
-}
-```
+The payload contains the latest trade price.
 
 The application reads the price and updates the UI in real time.
 
@@ -546,12 +530,6 @@ However, a network connection is required to receive live Binance market prices.
 # 🌐 Network Requirements
 
 PricePing requires an internet connection for live market data.
-
-The application connects to Binance's WebSocket endpoint:
-
-```text
-wss://fstream.binance.com/
-```
 
 If the connection is lost, the application reports a disconnected state and can attempt to reconnect.
 
