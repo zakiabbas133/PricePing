@@ -7,6 +7,7 @@ export interface AlarmType {
   id: number;
   symbol: string;
   futureOrSpot: string;
+  featureOrSpot: string;
   direction: string;
   target: number;
   triggered: boolean;
