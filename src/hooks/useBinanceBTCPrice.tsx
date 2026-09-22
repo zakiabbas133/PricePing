@@ -19,6 +19,7 @@ export type PriceAlarm = {
   triggeredPrice?: number;
   triggeredAt?: string;
   createdAt: string;
+  futureOrSpot: string;
 };
 
 type AlarmSettings = {
@@ -91,6 +92,43 @@ const useBinancePriceAlarm = (initialSymbol = "BTCUSDT") => {
         console.error("Failed to save alarms:", error);
       },
     );
+  }, []);
+
+  const refetchActiveAlarms = useCallback(async () => {
+    try {
+      const storedAlarms = await AsyncStorage.getItem(STORAGE_KEY);
+
+      if (!storedAlarms) {
+        alarmsRef.current = [];
+        setActiveAlarms([]);
+        setPastAlarms([]);
+        nextIdRef.current = 1;
+        return;
+      }
+
+      const parsed: PriceAlarm[] = JSON.parse(storedAlarms);
+
+      const validAlarms = Array.isArray(parsed) ? parsed : [];
+
+      // Update internal ref
+      alarmsRef.current = validAlarms;
+
+      // Update active alarms
+      setActiveAlarms(validAlarms.filter((alarm) => !alarm.triggered));
+
+      // Update past/triggered alarms
+      setPastAlarms(validAlarms.filter((alarm) => alarm.triggered));
+
+      // Update next ID
+      const maxId = validAlarms.reduce(
+        (max, alarm) => Math.max(max, alarm.id),
+        0,
+      );
+
+      nextIdRef.current = maxId + 1;
+    } catch (error) {
+      console.error("Failed to refetch alarms:", error);
+    }
   }, []);
 
   const loadStoredData = useCallback(async () => {
@@ -181,13 +219,12 @@ const useBinancePriceAlarm = (initialSymbol = "BTCUSDT") => {
         reconnectAttemptsRef.current = 0;
 
         setStatus("connected");
-
-        console.log("Connected to Binance:", streamSymbol);
       };
 
       ws.onmessage = (event) => {
         try {
           const trade: BinanceTrade = JSON.parse(event.data);
+                 
 
           const currentPrice = Number(trade.p);
 
@@ -198,6 +235,9 @@ const useBinancePriceAlarm = (initialSymbol = "BTCUSDT") => {
           if (!mountedRef.current) {
             return;
           }
+
+          console.log(currentPrice);
+          
 
           priceRef.current = currentPrice;
 
@@ -270,8 +310,6 @@ const useBinancePriceAlarm = (initialSymbol = "BTCUSDT") => {
 
         updateAlarms(updatedAlarms);
 
-        console.log("Price alarm triggered:", triggeredAlarm);
-
         if (currentSettings.notifications) {
           try {
             await sendNotification({
@@ -297,7 +335,12 @@ const useBinancePriceAlarm = (initialSymbol = "BTCUSDT") => {
   checkAlarmsRef.current = checkAlarms;
 
   const createAlarm = useCallback(
-    async (alarmSymbol: string, target: number, direction: string) => {
+    async (
+      alarmSymbol: string,
+      target: number,
+      direction: string,
+      futureOrSpot: string,
+    ) => {
       const normalizedSymbol = alarmSymbol.trim().toUpperCase();
 
       const normalizedTarget = Number(target);
@@ -321,6 +364,7 @@ const useBinancePriceAlarm = (initialSymbol = "BTCUSDT") => {
         direction: direction as AlarmDirection,
         triggered: false,
         createdAt: new Date().toISOString(),
+        futureOrSpot,
       };
 
       updateAlarms([...alarmsRef.current, newAlarm]);
@@ -414,6 +458,7 @@ const useBinancePriceAlarm = (initialSymbol = "BTCUSDT") => {
     price,
     loading,
     status,
+    refetchActiveAlarms,
     activeAlarms,
     pastAlarms,
     createAlarm,

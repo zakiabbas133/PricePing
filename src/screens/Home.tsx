@@ -1,53 +1,40 @@
 import { useState } from "react";
 import {
   Alert,
-  KeyboardAvoidingView,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
+  TouchableOpacity,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import useBinancePriceAlarm from "../hooks/useBinanceBTCPrice";
+import AntDesign from "@expo/vector-icons/AntDesign";
+import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
+import DropdownElement from "../components/Dropdown";
 
 const Home = () => {
-  const {
-    symbol,
-    price,
-    loading,
-    status,
-    activeAlarms,
-    pastAlarms,
-    createAlarm,
-    deleteAlarm,
-  } = useBinancePriceAlarm("BTCUSDT");
-
+  const insets = useSafeAreaInsets();
   const [symbolInput, setSymbolInput] = useState("BTCUSDT");
-
   const [targetInput, setTargetInput] = useState("");
-
   const [direction, setDirection] = useState<"above" | "below">("above");
-
+  const [futureOrSpot, setFutureOrSpot] = useState<"future" | "spot">("future");
   const [creating, setCreating] = useState(false);
+
+  const { price, loading, status, createAlarm } =
+    useBinancePriceAlarm(symbolInput);
 
   const formatPrice = (value: number | null) => {
     if (value === null || value === undefined) {
       return "—";
     }
 
-    return Number(value.toFixed(2)).toLocaleString(undefined, {
+    return value.toLocaleString(undefined, {
+      minimumFractionDigits: 2,
       maximumFractionDigits: 8,
     });
-  };
-
-  const formatDate = (date?: string) => {
-    if (!date) {
-      return "";
-    }
-
-    return new Date(date).toLocaleString();
   };
 
   const handleCreateAlarm = async () => {
@@ -70,7 +57,7 @@ const Home = () => {
     try {
       setCreating(true);
 
-      await createAlarm(normalizedSymbol, target, direction);
+      await createAlarm(normalizedSymbol, target, direction, futureOrSpot);
 
       setTargetInput("");
 
@@ -117,121 +104,64 @@ const Home = () => {
     }
   };
 
-  const renderAlarm = (alarm: any) => {
-    const isAbove = alarm.direction === "above";
-
-    return (
-      <View
-        key={alarm.id}
-        style={[styles.alarmCard, alarm.triggered && styles.triggeredAlarm]}
-      >
-        <View style={styles.alarmTop}>
-          <Text style={styles.alarmSymbol}>{alarm.symbol}</Text>
-
-          <View
-            style={[styles.badge, alarm.triggered && styles.triggeredBadge]}
-          >
-            <Text
-              style={[
-                styles.badgeText,
-                alarm.triggered && styles.triggeredBadgeText,
-              ]}
-            >
-              {alarm.triggered ? "Triggered" : "Active"}
-            </Text>
-          </View>
-        </View>
-
-        <View style={styles.alarmDetails}>
-          <View style={styles.directionRow}>
-            <Text
-              style={[
-                styles.directionArrow,
-                {
-                  color: isAbove ? "#16A34A" : "#DC2626",
-                },
-              ]}
-            >
-              {isAbove ? "↑" : "↓"}
-            </Text>
-
-            <Text style={styles.directionText}>
-              {isAbove ? "Above" : "Below"}
-            </Text>
-
-            <Text style={styles.alarmPrice}>{formatPrice(alarm.target)}</Text>
-          </View>
-
-          {alarm.triggered ? (
-            <>
-              <Text style={styles.detailText}>
-                Triggered Price:{" "}
-                <Text style={styles.detailStrong}>
-                  {formatPrice(alarm.triggeredPrice)}
-                </Text>
-              </Text>
-
-              <Text style={styles.detailText}>
-                Triggered: {formatDate(alarm.triggeredAt)}
-              </Text>
-            </>
-          ) : (
-            <Text style={styles.detailText}>
-              Created: {formatDate(alarm.createdAt)}
-            </Text>
-          )}
-        </View>
-
-        <Pressable
-          style={({ pressed }) => [
-            styles.deleteButton,
-            pressed && styles.pressed,
-          ]}
-          onPress={() => {
-            Alert.alert("Delete Alarm", `Delete the ${alarm.symbol} alarm?`, [
-              {
-                text: "Cancel",
-                style: "cancel",
-              },
-              {
-                text: "Delete",
-                style: "destructive",
-                onPress: () => deleteAlarm(alarm.id),
-              },
-            ]);
-          }}
-        >
-          <Text style={styles.deleteButtonText}>Delete</Text>
-        </Pressable>
-      </View>
-    );
-  };
-
   return (
     <View style={styles.safeArea}>
       <ScrollView
-        style={styles.scrollView}
+        contentContainerStyle={{
+          flexGrow: 1,
+          paddingTop: insets.top + 20,
+          paddingHorizontal: 20,
+        }}
         keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
+        showsVerticalScrollIndicator={true}
       >
         <Text style={styles.headerTitle}>Price Alarm</Text>
 
         {/* Create Alarm */}
         <View style={styles.card}>
-          <View style={styles.field}>
+          <View style={[styles.field, { marginTop: 0 }]}>
             <Text style={styles.label}>Crypto Pair</Text>
 
-            <TextInput
+            <DropdownElement
+              setValue={(val: string) => setSymbolInput(val)}
               value={symbolInput}
-              onChangeText={setSymbolInput}
-              placeholder="BTCUSDT"
-              placeholderTextColor="#98A2B3"
-              autoCapitalize="characters"
-              autoCorrect={false}
-              style={styles.input}
             />
+          </View>
 
-            <Text style={styles.helperText}>Binance USDⓈ-M Futures symbol</Text>
+          <View style={[styles.directionContainer, { marginBottom: 12 }]}>
+            <Pressable
+              onPress={() => setFutureOrSpot("spot")}
+              style={[
+                styles.directionButton,
+                futureOrSpot === "spot" && { backgroundColor: "#2B77F1" },
+              ]}
+            >
+              <Text
+                style={[
+                  styles.directionButtonText,
+                  futureOrSpot === "spot" && styles.selectedDirectionText,
+                ]}
+              >
+                Spot
+              </Text>
+            </Pressable>
+
+            <Pressable
+              onPress={() => setFutureOrSpot("future")}
+              style={[
+                styles.directionButton,
+                futureOrSpot === "future" && { backgroundColor: "#2B77F1" },
+              ]}
+            >
+              <Text
+                style={[
+                  styles.directionButtonText,
+                  futureOrSpot === "future" && styles.selectedDirectionText,
+                ]}
+              >
+                Futures
+              </Text>
+            </Pressable>
           </View>
 
           <View style={styles.field}>
@@ -243,7 +173,15 @@ const Home = () => {
               placeholder="92500"
               placeholderTextColor="#98A2B3"
               keyboardType="decimal-pad"
-              style={styles.input}
+              style={[
+                styles.input,
+                {
+                  borderWidth: 1,
+                  borderColor: "#D0D5DD",
+                  borderRadius: 10,
+                  paddingHorizontal: 14,
+                },
+              ]}
             />
           </View>
 
@@ -258,13 +196,18 @@ const Home = () => {
                   direction === "above" && styles.aboveSelected,
                 ]}
               >
+                <AntDesign
+                  name="arrow-up"
+                  size={15}
+                  color={direction === "above" ? "#fff" : "#000"}
+                />
                 <Text
                   style={[
                     styles.directionButtonText,
                     direction === "above" && styles.selectedDirectionText,
                   ]}
                 >
-                  ↑ Above
+                  Above
                 </Text>
               </Pressable>
 
@@ -275,44 +218,126 @@ const Home = () => {
                   direction === "below" && styles.belowSelected,
                 ]}
               >
+                <AntDesign
+                  name="arrow-down"
+                  size={15}
+                  color={direction === "below" ? "#fff" : "#000"}
+                />
                 <Text
                   style={[
                     styles.directionButtonText,
                     direction === "below" && styles.selectedDirectionText,
                   ]}
                 >
-                  ↓ Below
+                  Below
                 </Text>
               </Pressable>
             </View>
           </View>
 
-          <Pressable
+          <TouchableOpacity
             disabled={creating}
             onPress={handleCreateAlarm}
-            style={({ pressed }) => [
-              styles.primaryButton,
-              pressed && styles.primaryButtonPressed,
-              creating && styles.disabledButton,
-            ]}
+            style={[styles.primaryButton, creating && styles.disabledButton]}
           >
+            <MaterialCommunityIcons name="bell" size={16} color="#fff" />
             <Text style={styles.primaryButtonText}>
-              {creating ? "Creating..." : "🔔 Set Alarm"}
+              {creating ? "Creating..." : "Set Alarm"}
             </Text>
-          </Pressable>
+          </TouchableOpacity>
         </View>
 
         {/* Current Price */}
-        <View style={[styles.card, styles.priceCard]}>
-          <Text style={styles.priceLabel}>Current Futures Price</Text>
+        <View style={styles.card}>
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}
+          >
+            <Text
+              style={{
+                fontSize: 15,
+                color: "#000",
+                fontFamily: "Outfit-Regular",
+              }}
+            >
+              Current Price
+            </Text>
+            <Text
+              style={{
+                fontSize: 15,
+                color: "#2DA076",
+                fontFamily: "Outfit-SemiBold",
+              }}
+            >
+              +1.24%
+            </Text>
+          </View>
 
-          <Text style={styles.livePrice}>
-            {loading ? "—" : formatPrice(price)}
-          </Text>
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}
+          >
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "baseline",
+                gap: 7,
+              }}
+            >
+              <Text
+                style={{
+                  fontSize: 26,
+                  color: "#000",
+                  fontFamily: "Outfit-Bold",
+                }}
+              >
+                {loading ? "—" : formatPrice(price)}
+              </Text>
+              <Text
+                style={{
+                  fontSize: 14,
+                  color: "#626770",
+                  fontFamily: "Outfit-SemiBold",
+                }}
+              >
+                USDT
+              </Text>
+            </View>
+            <Text
+              style={{
+                fontSize: 14,
+                color: "#626770",
+                fontFamily: "Outfit-Regular",
+              }}
+            >
+              (24h)
+            </Text>
+          </View>
+        </View>
 
-          <Text style={styles.symbolText}>{symbol}</Text>
-
-          <View style={styles.connection}>
+        <View
+          style={[
+            styles.card,
+            {
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+            },
+          ]}
+        >
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 10,
+            }}
+          >
             <View
               style={[
                 styles.connectionDot,
@@ -321,50 +346,16 @@ const Home = () => {
                 },
               ]}
             />
-
             <Text style={styles.connectionText}>{getConnectionText()}</Text>
           </View>
+          <MaterialCommunityIcons
+            name="signal"
+            size={24}
+            color={getConnectionColor()}
+          />
         </View>
 
         {/* Quick Settings */}
-
-        {/* Active Alarms */}
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Active Alarms</Text>
-
-          <View style={styles.countBadge}>
-            <Text style={styles.countBadgeText}>{activeAlarms.length}</Text>
-          </View>
-        </View>
-
-        {activeAlarms.length === 0 ? (
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyIcon}>🔔</Text>
-
-            <Text style={styles.emptyText}>No active alarms</Text>
-          </View>
-        ) : (
-          activeAlarms.map(renderAlarm)
-        )}
-
-        {/* Past Alarms */}
-        <View style={[styles.sectionHeader, styles.pastSectionHeader]}>
-          <Text style={styles.sectionTitle}>Past Alarms</Text>
-
-          <View style={styles.countBadge}>
-            <Text style={styles.countBadgeText}>{pastAlarms.length}</Text>
-          </View>
-        </View>
-
-        {pastAlarms.length === 0 ? (
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyIcon}>🔔</Text>
-
-            <Text style={styles.emptyText}>No past alarms</Text>
-          </View>
-        ) : (
-          pastAlarms.map(renderAlarm)
-        )}
       </ScrollView>
     </View>
   );
@@ -375,23 +366,14 @@ export default Home;
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#F5F7FB",
-    padding: 20,
-  },
-
-  container: {
-    flex: 1,
-  },
-
-  scrollView: {
-    flex: 1,
+    backgroundColor: "#ffffff",
   },
 
   headerTitle: {
     fontSize: 25,
-    fontWeight: "700",
     color: "#101828",
-    marginBottom: 20,
+    marginBottom: 10,
+    fontFamily: "Outfit-Bold",
   },
 
   card: {
@@ -401,17 +383,18 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 18,
     marginBottom: 16,
-    shadowColor: "#101828",
+    shadowColor: "#000",
     shadowOffset: {
       width: 0,
-      height: 3,
+      height: 1,
     },
-    shadowOpacity: 0.05,
-    shadowRadius: 12,
-    elevation: 2,
+    shadowOpacity: 0.18,
+    shadowRadius: 1.0,
+    elevation: 1,
   },
 
   field: {
+    marginTop: 8,
     marginBottom: 18,
   },
 
@@ -420,18 +403,15 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#101828",
     marginBottom: 8,
+    fontFamily: "Outfit-SemiBold",
   },
 
   input: {
-    width: "100%",
-    height: 48,
-    borderWidth: 1,
-    borderColor: "#D0D5DD",
-    borderRadius: 10,
-    paddingHorizontal: 14,
+    flex: 1,
     fontSize: 16,
     color: "#101828",
     backgroundColor: "#FFFFFF",
+    fontFamily: "Outfit-Regular",
   },
 
   helperText: {
@@ -447,12 +427,14 @@ const styles = StyleSheet.create({
 
   directionButton: {
     flex: 1,
-    height: 48,
+    flexDirection: "row",
+    gap: 5,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 8,
     borderWidth: 1,
     borderColor: "#D0D5DD",
     borderRadius: 10,
-    alignItems: "center",
-    justifyContent: "center",
     backgroundColor: "#FFFFFF",
   },
 
@@ -470,6 +452,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "600",
     color: "#344054",
+    fontFamily: "Outfit-Medium",
   },
 
   selectedDirectionText: {
@@ -477,17 +460,16 @@ const styles = StyleSheet.create({
   },
 
   primaryButton: {
-    width: "100%",
-    height: 50,
-    borderRadius: 11,
-    backgroundColor: "#1677FF",
+    flex: 1,
+    flexDirection: "row",
+    gap: 5,
     alignItems: "center",
     justifyContent: "center",
-  },
-
-  primaryButtonPressed: {
-    backgroundColor: "#0D6EFD",
-    opacity: 0.9,
+    paddingVertical: 8,
+    borderWidth: 1,
+    borderColor: "#D0D5DD",
+    borderRadius: 10,
+    backgroundColor: "#1677FF",
   },
 
   disabledButton: {
@@ -498,6 +480,7 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontSize: 16,
     fontWeight: "600",
+    fontFamily: "Outfit-SemiBold",
   },
 
   priceCard: {
@@ -525,6 +508,7 @@ const styles = StyleSheet.create({
   connection: {
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "space-between",
     gap: 8,
     marginTop: 10,
   },
@@ -537,19 +521,20 @@ const styles = StyleSheet.create({
 
   connectionText: {
     fontSize: 13,
-    color: "#667085",
+    color: "#626770",
+    fontFamily: "Outfit-SemiBold",
   },
 
   sectionHeader: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginTop: 8,
+    // marginTop: 8,
     marginBottom: 12,
   },
 
   pastSectionHeader: {
-    marginTop: 20,
+    // marginTop: 20,
   },
 
   sectionTitle: {
@@ -572,103 +557,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "700",
     color: "#1677FF",
-  },
-
-  alarmCard: {
-    backgroundColor: "#FFFFFF",
-    borderWidth: 1,
-    borderColor: "#E4E7EC",
-    borderRadius: 14,
-    padding: 15,
-    marginBottom: 12,
-  },
-
-  triggeredAlarm: {
-    borderColor: "#F04438",
-  },
-
-  alarmTop: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-
-  alarmSymbol: {
-    fontSize: 17,
-    fontWeight: "700",
-    color: "#101828",
-  },
-
-  badge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 20,
-    backgroundColor: "#ECFDF3",
-  },
-
-  badgeText: {
-    fontSize: 11,
-    fontWeight: "600",
-    color: "#027A48",
-  },
-
-  triggeredBadge: {
-    backgroundColor: "#FEF3F2",
-  },
-
-  triggeredBadgeText: {
-    color: "#B42318",
-  },
-
-  alarmDetails: {
-    marginTop: 12,
-  },
-
-  directionRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 5,
-  },
-
-  directionArrow: {
-    fontSize: 20,
-    fontWeight: "700",
-    marginRight: 5,
-  },
-
-  directionText: {
-    fontSize: 14,
-    color: "#475467",
-    marginRight: 7,
-  },
-
-  alarmPrice: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: "#101828",
-  },
-
-  detailText: {
-    fontSize: 14,
-    lineHeight: 24,
-    color: "#475467",
-  },
-
-  detailStrong: {
-    fontWeight: "700",
-    color: "#101828",
-  },
-
-  deleteButton: {
-    alignSelf: "flex-start",
-    marginTop: 8,
-    paddingVertical: 4,
-  },
-
-  deleteButtonText: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: "#F04438",
   },
 
   pressed: {

@@ -188,8 +188,6 @@ const useNotifications = () => {
       trigger: null,
     });
 
-    console.log("Notification generated:", notificationId);
-
     return notificationId;
   };
 
@@ -222,8 +220,6 @@ const useNotifications = () => {
         repeats: false,
       },
     });
-
-    console.log("Scheduled notification:", notificationId);
 
     return notificationId;
   };
