@@ -57,16 +57,16 @@ The app is designed around a simple idea:
 
 ## 🛠️ Tech Stack
 
-| Technology | Purpose |
-|---|---|
-| React Native | Mobile application framework |
-| Expo | React Native development platform |
-| Expo Router / React Navigation | App navigation |
-| TypeScript / JavaScript | Application development |
-| Binance WebSocket | Real-time crypto prices |
-| `@react-native-async-storage/async-storage` | Local persistence |
-| `expo-notifications` | Notifications and alarm alerts |
-| EAS Build | Android development/production builds |
+| Technology                                  | Purpose                               |
+| ------------------------------------------- | ------------------------------------- |
+| React Native                                | Mobile application framework          |
+| Expo                                        | React Native development platform     |
+| Expo Router / React Navigation              | App navigation                        |
+| TypeScript / JavaScript                     | Application development               |
+| Binance WebSocket                           | Real-time crypto prices               |
+| `@react-native-async-storage/async-storage` | Local persistence                     |
+| `expo-notifications`                        | Notifications and alarm alerts        |
+| EAS Build                                   | Android development/production builds |
 
 ---
 
@@ -391,10 +391,7 @@ A typical configuration for custom sounds looks like:
     [
       "expo-notifications",
       {
-        "sounds": [
-          "./assets/sounds/alarm1.mp3",
-          "./assets/sounds/alarm2.mp3"
-        ]
+        "sounds": ["./assets/sounds/alarm1.mp3", "./assets/sounds/alarm2.mp3"]
       }
     ]
   ]
@@ -492,19 +489,7 @@ Direction: Above
 
 The application continuously observes the live price.
 
-If the configured condition is reached, the alarm is triggered.
-
-### Above
-
-```text
-Current price >= target price
-```
-
-### Below
-
-```text
-Current price <= target price
-```
+If the price reaches the entered limit, the alarm is triggered.
 
 After an alarm is triggered, it can be moved from the active-alarm state to the alarm history/past-alarm state depending on the application's current implementation.
 
@@ -626,10 +611,7 @@ Example:
 [
   "expo-notifications",
   {
-    "sounds": [
-      "./assets/sounds/alarm1.mp3",
-      "./assets/sounds/alarm2.mp3"
-    ]
+    "sounds": ["./assets/sounds/alarm1.mp3", "./assets/sounds/alarm2.mp3"]
   }
 ]
 ```
@@ -729,11 +711,11 @@ eas build:list
 
 # 📦 Development vs Production
 
-| Build | Purpose | Typical command |
-|---|---|---|
+| Build       | Purpose                       | Typical command                                      |
+| ----------- | ----------------------------- | ---------------------------------------------------- |
 | Development | Local development and testing | `eas build --platform android --profile development` |
-| Preview | Internal testing/distribution | `eas build --platform android --profile preview` |
-| Production | Store/release build | `eas build --platform android --profile production` |
+| Preview     | Internal testing/distribution | `eas build --platform android --profile preview`     |
+| Production  | Store/release build           | `eas build --platform android --profile production`  |
 
 A development build contains the development client and is intended for development rather than Play Store distribution.
 
