@@ -1,17 +1,17 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useDispatch } from "react-redux";
 import {
-  addNewAlarm,
   deleteSelectedAlarm,
+  setAlarms,
   setNotificationsEnabled,
   setSelectedSound,
   setSoundEnabled,
-  // setUserId,
   setVolume,
 } from "../store/appSlice";
 import { SoundItem } from "../screens/AlarmSounds";
 import useNotifications from "./useNotifications";
 import createAlarmOnBackend from "../api/createAlarm";
+import deleteAlarmFromDb from "../api/deleteAalrm";
 
 type AlarmDirection = "above" | "below";
 
@@ -115,7 +115,10 @@ const useGeneratePrice = (initialCurreny = "BTCUSDT") => {
 
   const deleteAlarm = useCallback(
     async (alarmId: number) => {
-      dispatch(deleteSelectedAlarm(alarmId));
+      const res = await deleteAlarmFromDb(alarmId);
+      if(res.success) {
+        dispatch(setAlarms(res.data));
+      }
     },
     [dispatch],
   );
@@ -281,9 +284,10 @@ const useGeneratePrice = (initialCurreny = "BTCUSDT") => {
       /*
        * Now userId is guaranteed to exist.
        */
-      await createAlarmOnBackend(alarmToSend, userId);
-
-      dispatch(addNewAlarm(newAlarm));
+      const res = await createAlarmOnBackend(alarmToSend, userId);
+      if (res.success) {
+        dispatch(setAlarms(res.data));
+      }
 
       if (initialPrice !== undefined) {
         alarmLastPriceRef.current.set(newAlarm.id, initialPrice);

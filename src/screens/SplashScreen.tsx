@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { Animated, Easing, Image, StyleSheet, Text, View } from "react-native";
-import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { StatusBar } from "expo-status-bar";
+import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 
 const AppSplashScreen = ({
   startExitAnimation,
@@ -24,7 +24,6 @@ const AppSplashScreen = ({
   const graphScale = useRef(new Animated.Value(0.96)).current;
 
   useEffect(() => {
-    // Intro animation
     Animated.parallel([
       Animated.timing(contentOpacity, {
         toValue: 1,

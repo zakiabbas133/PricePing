@@ -1,19 +1,61 @@
-import { useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { useSelector } from "react-redux";
+import { useCallback, useEffect, useState } from "react";
+import {
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
+import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "../store/store";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { setAlarms } from "../store/appSlice";
 import RenderAlarm from "../components/RenderAlarm";
 import useGeneratePrice from "../hooks/useGeneratePrice";
+import getAlarms from "../api/getAlarms";
 
 const Alarms = () => {
   const insets = useSafeAreaInsets();
+  const dispatch = useDispatch();
+  const userId = useSelector((state: RootState) => state.app.userId);
   const { deleteAlarm } = useGeneratePrice();
   const [activeOrPast, setActiveOrPast] = useState("");
+  const [refreshing, setRefreshing] = useState(false);
   const persistedAlarms = useSelector((state: RootState) => state.app.alarms);
   const pastAlarms = persistedAlarms.filter((x) => x.triggered == true);
   const activeAlarms = persistedAlarms.filter((x) => x.triggered == false);
+
+  const alarmsOnBackend = async () => {
+    try {
+      const res = await getAlarms(userId || "");
+      if(res.success) {
+        dispatch(setAlarms(res.data));
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    alarmsOnBackend()
+      .then(() => {
+        setRefreshing(false);
+      })
+      .catch((err) => {
+        console.error(err);
+        setRefreshing(false);
+      })
+      .finally(() => {
+        setRefreshing(false);
+      });
+  }, []);
+
+  useEffect(() => {
+    alarmsOnBackend();
+  }, []);
 
   return (
     <View style={styles.safeArea}>
@@ -25,6 +67,9 @@ const Alarms = () => {
           paddingHorizontal: 20,
           backgroundColor: "#fff",
         }}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={true}
       >

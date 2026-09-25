@@ -11,8 +11,8 @@ const createAlarmOnBackend = async (
       userId,
     };
 
-    const apiBaseUrl = Constants.expoConfig?.extra?.apiBaseUrl; // LIVE
-    // const apiBaseUrl = Constants.expoConfig?.extra?.localApiBaseUrl; // LOCAL
+    // const apiBaseUrl = Constants.expoConfig?.extra?.apiBaseUrl; // LIVE
+    const apiBaseUrl = Constants.expoConfig?.extra?.localApiBaseUrl; // LOCAL
 
     const xApiKey = Constants.expoConfig?.extra?.xApiKey;
 

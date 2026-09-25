@@ -14,8 +14,8 @@ function PricePingTabs() {
         tabBarActiveTintColor: "#2B77F1",
         tabBarInactiveTintColor: "#626770",
         tabBarLabelStyle: {
-          fontFamily: 'Outfit-SemiBold'
-        }
+          fontFamily: "Outfit-SemiBold",
+        },
       }}
     >
       <Tab.Screen

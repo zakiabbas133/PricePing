@@ -187,7 +187,7 @@ const useNotifications = () => {
           token,
           Platform.OS,
           Constants.deviceName || "",
-        );
+        );        
 
         if (!response?.success) {
           throw new Error("Unable to register push token.");
@@ -426,16 +426,8 @@ const useNotifications = () => {
     notification,
     loading,
     permissionGranted,
-
     requestPermissions,
-
-    /*
-     * IMPORTANT:
-     * useGeneratePrice will use this before creating
-     * an alarm on the backend.
-     */
     getOrCreateUserId,
-
     sendNotification,
     scheduleNotification,
     cancelNotification,

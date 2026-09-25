@@ -41,8 +41,8 @@ const appSlice = createSlice({
   name: "app",
   initialState,
   reducers: {
-    addNewAlarm: (state, action: PayloadAction<PriceAlarm>) => {
-      state.alarms.push(action.payload);
+    setAlarms: (state, action: PayloadAction<PriceAlarm[]>) => {
+      state.alarms = action.payload;
     },
 
     deleteSelectedAlarm: (state, action: PayloadAction<number>) => {
@@ -78,7 +78,7 @@ const appSlice = createSlice({
 });
 
 export const {
-  addNewAlarm,
+  setAlarms,
   deleteSelectedAlarm,
   setAlarmSettings,
   setSoundEnabled,

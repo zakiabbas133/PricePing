@@ -1,4 +1,3 @@
-import { Feather, FontAwesome5 } from "@expo/vector-icons";
 import { useState } from "react";
 import { Image, Platform, StyleSheet, Text, View } from "react-native";
 import { Dropdown } from "react-native-element-dropdown";
@@ -75,7 +74,12 @@ const DropdownElement = ({
         itemContainerStyle={{ paddingVertical: 10 }}
         renderLeftIcon={() => (
           <Image
-            style={{ width: 30, height: 30, borderRadius: 999, marginRight: 10 }}
+            style={{
+              width: 30,
+              height: 30,
+              borderRadius: 999,
+              marginRight: 10,
+            }}
             source={selectedImage}
           />
         )}
