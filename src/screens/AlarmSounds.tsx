@@ -15,7 +15,6 @@ import {
 import { Ionicons, SimpleLineIcons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useDispatch, useSelector } from "react-redux";
-import { SelectedSound, setSelectedSound } from "../store/appSlice";
 import type { AppDispatch, RootState } from "../store/store";
 import useGeneratePrice from "../hooks/useGeneratePrice";
 
