@@ -1,271 +1,149 @@
-import { AntDesign, MaterialCommunityIcons } from "@expo/vector-icons";
-import {
-  Alert,
-  Pressable,
-  RefreshControl,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { useState } from "react";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { useSelector } from "react-redux";
+import { RootState } from "../store/store";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import useBinancePriceAlarm from "../hooks/useBinanceBTCPrice";
-import { useCallback, useState } from "react";
-import RenderAlarm, { AlarmType } from "../components/RenderAlarm";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
+import RenderAlarm from "../components/RenderAlarm";
+import useGeneratePrice from "../hooks/useGeneratePrice";
 
 const Alarms = () => {
   const insets = useSafeAreaInsets();
+  const { deleteAlarm } = useGeneratePrice();
   const [activeOrPast, setActiveOrPast] = useState("");
-  const [refreshing, setRefreshing] = useState(false);
-  const { deleteAlarm, activeAlarms, pastAlarms, refetchActiveAlarms } =
-    useBinancePriceAlarm("BTCUSDT");
-  const formatPrice = (value: number | null) => {
-    if (value === null || value === undefined) {
-      return "—";
-    }
+  const persistedAlarms = useSelector((state: RootState) => state.app.alarms);
+  const pastAlarms = persistedAlarms.filter((x) => x.triggered == true);
+  const activeAlarms = persistedAlarms.filter((x) => x.triggered == false);
 
-    return value.toLocaleString(undefined, {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 8,
-    });
-  };
-
-  const formatDate = (date?: string) => {
-    if (!date) {
-      return "";
-    }
-
-    return new Date(date).toLocaleString();
-  };
-
-  const onRefresh = useCallback(() => {
-    setRefreshing(true);
-    refetchActiveAlarms()
-      .then(() => {
-        setRefreshing(false);
-      })
-      .finally(() => {
-        setRefreshing(false);
-      });
-  }, []);
-
-  const renderAlarm = (alarm: AlarmType) => {
-    const isAbove = alarm.direction === "above";
-
-    return (
-      <View
-        key={alarm.id}
-        style={[styles.alarmCard, alarm.triggered && styles.triggeredAlarm]}
+  return (
+    <View style={styles.safeArea}>
+      <ScrollView
+        contentContainerStyle={{
+          flexGrow: 1,
+          paddingTop: insets.top + 20,
+          paddingBottom: 20,
+          paddingHorizontal: 20,
+          backgroundColor: "#fff",
+        }}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={true}
       >
-        <View style={styles.alarmTop}>
-          <Text style={styles.alarmSymbol}>{alarm.symbol}</Text>
+        <Text style={styles.headerTitle}>Alarms</Text>
 
-          <View
-            style={[styles.badge, alarm.triggered && styles.triggeredBadge]}
+        <View style={[styles.directionContainer, { marginBottom: 12 }]}>
+          <Pressable
+            onPress={() => setActiveOrPast("active")}
+            style={[
+              styles.directionButton,
+              activeOrPast === "active" && { backgroundColor: "#2B77F1" },
+            ]}
           >
             <Text
               style={[
-                styles.badgeText,
-                alarm.triggered && styles.triggeredBadgeText,
+                styles.directionButtonText,
+                activeOrPast === "active" && styles.selectedDirectionText,
               ]}
             >
-              {alarm.triggered ? "Triggered" : "Active"}
+              Active ({activeAlarms.length})
             </Text>
-          </View>
-        </View>
+          </Pressable>
 
-        <View style={styles.alarmDetails}>
-          <View style={styles.directionRow}>
+          <Pressable
+            onPress={() => setActiveOrPast("past")}
+            style={[
+              styles.directionButton,
+              activeOrPast === "past" && { backgroundColor: "#2B77F1" },
+            ]}
+          >
             <Text
               style={[
-                styles.directionArrow,
+                styles.directionButtonText,
+                activeOrPast === "past" && styles.selectedDirectionText,
+              ]}
+            >
+              Past ({pastAlarms.length})
+            </Text>
+          </Pressable>
+        </View>
+
+        {/* Active Alarms */}
+        {(activeOrPast == "" || activeOrPast == "active") && (
+          <>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Active Alarms</Text>
+            </View>
+
+            {activeAlarms.length === 0 ? (
+              <View style={styles.emptyContainer}>
+                <MaterialCommunityIcons name="bell" size={32} color="#98A2B3" />
+
+                <Text style={styles.emptyText}>No active alarms</Text>
+              </View>
+            ) : (
+              <View style={{ gap: 10 }}>
+                {activeAlarms.map((alarm, index) => {
+                  return (
+                    <RenderAlarm
+                      key={index}
+                      alarm={alarm}
+                      deleteAlarm={() => deleteAlarm(alarm.id)}
+                    />
+                  );
+                })}
+              </View>
+            )}
+          </>
+        )}
+
+        {(activeOrPast == "" || activeOrPast == "past") && (
+          <>
+            {/* Past Alarms */}
+            <View
+              style={[
+                styles.sectionHeader,
                 {
-                  color: isAbove ? "#16A34A" : "#DC2626",
+                  marginTop:
+                    activeOrPast == "" ? 12 : activeOrPast == "past" ? 0 : 12,
                 },
               ]}
             >
-              {isAbove ? (
-                <AntDesign name="arrow-up" size={24} color="black" />
-              ) : (
-                <AntDesign name="arrow-down" size={24} color="black" />
-              )}
-            </Text>
-
-            <Text style={styles.directionText}>
-              {isAbove ? "Above" : "Below"}
-            </Text>
-
-            <Text style={styles.alarmPrice}>{formatPrice(alarm.target)}</Text>
-          </View>
-
-          {alarm.triggered ? (
-            <>
-              <Text style={styles.detailText}>
-                Triggered Price:{" "}
-                <Text style={styles.detailStrong}>
-                  {formatPrice(alarm.triggeredPrice)}
-                </Text>
-              </Text>
-
-              <Text style={styles.detailText}>
-                Triggered: {formatDate(alarm.triggeredAt)}
-              </Text>
-            </>
-          ) : (
-            <Text style={styles.detailText}>
-              Created: {formatDate(alarm.createdAt)}
-            </Text>
-          )}
-        </View>
-
-        <TouchableOpacity
-          style={styles.deleteButton}
-          onPress={() => {
-            Alert.alert("Delete Alarm", `Delete the ${alarm.symbol} alarm?`, [
-              {
-                text: "Cancel",
-                style: "cancel",
-              },
-              {
-                text: "Delete",
-                style: "destructive",
-                onPress: () => deleteAlarm(alarm.id),
-              },
-            ]);
-          }}
-        >
-          <Text style={styles.deleteButtonText}>Delete</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  };
-
-  return (
-    <ScrollView
-      contentContainerStyle={{
-        flexGrow: 1,
-        paddingTop: insets.top + 20,
-        paddingBottom: 20,
-        paddingHorizontal: 20,
-        backgroundColor: "#fff",
-      }}
-      keyboardShouldPersistTaps="handled"
-      showsVerticalScrollIndicator={true}
-      refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-      }
-    >
-      <Text style={styles.headerTitle}>Alarms</Text>
-
-      <View style={[styles.directionContainer, { marginBottom: 12 }]}>
-        <Pressable
-          onPress={() => setActiveOrPast("active")}
-          style={[
-            styles.directionButton,
-            activeOrPast === "active" && { backgroundColor: "#2B77F1" },
-          ]}
-        >
-          <Text
-            style={[
-              styles.directionButtonText,
-              activeOrPast === "active" && styles.selectedDirectionText,
-            ]}
-          >
-            Active ({activeAlarms.length})
-          </Text>
-        </Pressable>
-
-        <Pressable
-          onPress={() => setActiveOrPast("past")}
-          style={[
-            styles.directionButton,
-            activeOrPast === "past" && { backgroundColor: "#2B77F1" },
-          ]}
-        >
-          <Text
-            style={[
-              styles.directionButtonText,
-              activeOrPast === "past" && styles.selectedDirectionText,
-            ]}
-          >
-            Past ({pastAlarms.length})
-          </Text>
-        </Pressable>
-      </View>
-
-      {/* Active Alarms */}
-      {(activeOrPast == "" || activeOrPast == "active") && (
-        <>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Active Alarms</Text>
-          </View>
-
-          {activeAlarms.length === 0 ? (
-            <View style={styles.emptyContainer}>
-              <MaterialCommunityIcons name="bell" size={32} color="#98A2B3" />
-
-              <Text style={styles.emptyText}>No active alarms</Text>
+              <Text style={styles.sectionTitle}>Past Alarms</Text>
             </View>
-          ) : (
-            <View style={{ gap: 10 }}>
-              {activeAlarms.map((alarm) => {
-                return (
-                  <RenderAlarm
-                    key={alarm.id}
-                    alarm={alarm}
-                    deleteAlarm={() => deleteAlarm(alarm.id)}
-                  />
-                );
-              })}
-            </View>
-          )}
-        </>
-      )}
 
-      {(activeOrPast == "" || activeOrPast == "past") && (
-        <>
-          {/* Past Alarms */}
-          <View
-            style={[
-              styles.sectionHeader,
-              {
-                marginTop:
-                  activeOrPast == "" ? 12 : activeOrPast == "past" ? 0 : 12,
-              },
-            ]}
-          >
-            <Text style={styles.sectionTitle}>Past Alarms</Text>
-          </View>
+            {pastAlarms.length === 0 ? (
+              <View style={styles.emptyContainer}>
+                <MaterialCommunityIcons name="bell" size={32} color="#98A2B3" />
 
-          {pastAlarms.length === 0 ? (
-            <View style={styles.emptyContainer}>
-              <MaterialCommunityIcons name="bell" size={32} color="#98A2B3" />
-
-              <Text style={styles.emptyText}>No past alarms</Text>
-            </View>
-          ) : (
-            <View style={{ gap: 10 }}>
-              {pastAlarms.map((alarm) => {
-                return (
-                  <RenderAlarm
-                    key={alarm.id}
-                    alarm={alarm}
-                    deleteAlarm={() => deleteAlarm(alarm.id)}
-                  />
-                );
-              })}
-            </View>
-          )}
-        </>
-      )}
-    </ScrollView>
+                <Text style={styles.emptyText}>No past alarms</Text>
+              </View>
+            ) : (
+              <View style={{ gap: 10 }}>
+                {pastAlarms.map((alarm, index) => {
+                  return (
+                    <RenderAlarm
+                      key={index}
+                      alarm={alarm}
+                      deleteAlarm={() => deleteAlarm(alarm.id)}
+                    />
+                  );
+                })}
+              </View>
+            )}
+          </>
+        )}
+      </ScrollView>
+    </View>
   );
 };
 
 export default Alarms;
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: "#ffffff",
+  },
+
   headerTitle: {
     fontSize: 25,
     fontFamily: "Outfit-Bold",

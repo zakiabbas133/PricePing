@@ -14,11 +14,12 @@ import {
 } from "expo-audio";
 import { Ionicons, SimpleLineIcons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useDispatch, useSelector } from "react-redux";
+import { SelectedSound, setSelectedSound } from "../store/appSlice";
+import type { AppDispatch, RootState } from "../store/store";
+import useGeneratePrice from "../hooks/useGeneratePrice";
 
-const SELECTED_SOUND_KEY = "selectedAlarmSound";
-
-type SoundItem = {
+export type SoundItem = {
   id: string;
   name: string;
   description: string;
@@ -42,7 +43,11 @@ const SOUNDS: SoundItem[] = [
 
 const AlarmSounds = ({ navigation }: any) => {
   const insets = useSafeAreaInsets();
-  const [selectedSound, setSelectedSound] = useState("sound1");
+  const { setAlarmSound } = useGeneratePrice();
+  const dispatch = useDispatch<AppDispatch>();
+  const selectedSound = useSelector(
+    (state: RootState) => state.app.selectedSound,
+  );
   const [playingId, setPlayingId] = useState<string | null>(null);
   const [loadingId, setLoadingId] = useState<string | null>(null);
 
@@ -66,22 +71,6 @@ const AlarmSounds = ({ navigation }: any) => {
   }, []);
 
   useEffect(() => {
-    const loadSelectedSound = async () => {
-      try {
-        const savedSound = await AsyncStorage.getItem(SELECTED_SOUND_KEY);
-
-        if (savedSound && SOUNDS.some((sound) => sound.id === savedSound)) {
-          setSelectedSound(savedSound);
-        }
-      } catch (error) {
-        console.error("Failed to load selected sound:", error);
-      }
-    };
-
-    loadSelectedSound();
-  }, []);
-
-  useEffect(() => {
     return () => {
       try {
         player.pause();
@@ -99,15 +88,16 @@ const AlarmSounds = ({ navigation }: any) => {
     }
   }, [status.currentTime, status.duration, playingId]);
 
-  const selectSound = useCallback(async (soundId: string) => {
-    try {
-      setSelectedSound(soundId);
-
-      await AsyncStorage.setItem(SELECTED_SOUND_KEY, soundId);
-    } catch (error) {
-      console.error("Failed to save selected sound:", error);
-    }
-  }, []);
+  const selectSound = useCallback(
+    async (sound: SoundItem) => {
+      try {
+        setAlarmSound(sound);
+      } catch (error) {
+        console.error("Failed to save selected sound:", error);
+      }
+    },
+    [dispatch],
+  );
 
   const togglePlayback = useCallback(
     async (sound: SoundItem) => {
@@ -134,7 +124,7 @@ const AlarmSounds = ({ navigation }: any) => {
   );
 
   const renderSound = ({ item }: { item: SoundItem }) => {
-    const isSelected = selectedSound === item.id;
+    const isSelected = selectedSound.id === item.id;
     const isPlaying = playingId === item.id;
     const isLoading = loadingId === item.id;
     const progress =
@@ -144,7 +134,7 @@ const AlarmSounds = ({ navigation }: any) => {
 
     return (
       <TouchableOpacity
-        onPress={() => selectSound(item.id)}
+        onPress={() => selectSound(item as SoundItem)}
         style={[styles.soundCard, isSelected && styles.soundCardSelected]}
       >
         <View style={styles.soundLeft}>
@@ -249,8 +239,8 @@ const AlarmSounds = ({ navigation }: any) => {
           <Text style={styles.currentLabel}>CURRENT SOUND</Text>
 
           <Text style={styles.currentSound}>
-            {SOUNDS.find((sound) => sound.id === selectedSound)?.description ??
-              "Sound 1"}
+            {SOUNDS.find((sound) => sound.id === selectedSound.id)
+              ?.description ?? "Sound 1"}
           </Text>
         </View>
 
@@ -286,7 +276,7 @@ export default AlarmSounds;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F8FAFC",
+    backgroundColor: "#ffffff",
     paddingHorizontal: 20,
   },
 

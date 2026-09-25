@@ -8,12 +8,14 @@
     "userInterfaceStyle": "light",
     "ios": {
       "supportsTablet": true,
+      "googleServicesFile": "./GoogleService-Info.plist",
       "bundleIdentifier": "com.uzairjamal.priceping",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
+      "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -30,10 +32,7 @@
       [
         "expo-notifications",
         {
-          "sounds": [
-            "./assets/sounds/alarm1.mp3",
-            "./assets/sounds/alarm2.mp3"
-          ]
+          "sounds": ["./assets/sounds/alarm1.mp3", "./assets/sounds/alarm2.mp3"]
         }
       ],
       "expo-background-task",
@@ -81,12 +80,16 @@
           }
         }
       ],
-      "expo-audio"
+      "expo-audio",
+      "expo-asset"
     ],
     "extra": {
       "eas": {
         "projectId": "ae4511eb-9ccc-4f70-8317-63c0dca0afc4"
-      }
+      },
+      "apiBaseUrl": "https://pricepingbackendservice.onrender.com",
+      "localApiBaseUrl": "http://10.0.2.2:5009",
+      "xApiKey": "pwfmha48UQ7WwkhgZ0E0Q7KrN6PiobLI2TkTEWoE"
     }
   }
 }

@@ -1,29 +1,33 @@
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import FontAwesome5 from "@expo/vector-icons/FontAwesome5";
+import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { AntDesign, Ionicons } from "@expo/vector-icons";
-import useBinancePriceAlarm from "../hooks/useBinanceBTCPrice";
-
-export interface AlarmType {
-  id: number;
-  symbol: string;
-  futureOrSpot: string;
-  featureOrSpot: string;
-  direction: string;
-  target: number;
-  triggered: boolean;
-  createdAt: string;
-  triggeredPrice: number;
-  triggeredAt: string;
-}
+import { PriceAlarm } from "../hooks/useGeneratePrice";
 
 const RenderAlarm = ({
   alarm,
   deleteAlarm,
 }: {
-  alarm: AlarmType;
-  deleteAlarm: (id: Number) => void;
+  alarm: PriceAlarm;
+  deleteAlarm: (id: number) => void;
 }) => {
-  const { price, loading } = useBinancePriceAlarm("BTCUSDT");
+  const coinImages: Record<string, any> = {
+    BTCUSDT: require("../../assets/coins/bitcoin.png"),
+    ETHUSDT: require("../../assets/coins/ethereum.png"),
+    SOLUSDT: require("../../assets/coins/salana.jpg"),
+  };
+
+  const showCoin = (symbol: string) => {
+    const imgSrc =
+      coinImages[symbol] ?? require("../../assets/coins/bitcoin.png");
+    return (
+      <Image
+        style={{
+          width: 35,
+          height: 35,
+        }}
+        source={imgSrc}
+      />
+    );
+  };
 
   const formatPrice = (value: number | null) => {
     if (value === null || value === undefined) {
@@ -74,7 +78,8 @@ const RenderAlarm = ({
             gap: 10,
           }}
         >
-          <FontAwesome5 name="bitcoin" size={35} color="#F7931A" />
+          {/* <FontAwesome5 name="bitcoin" size={35} color="#F7931A" /> */}
+          {showCoin(alarm.symbol)}
           <View>
             <View
               style={{
@@ -111,10 +116,8 @@ const RenderAlarm = ({
                     },
                   ]}
                 >
-                  {/* {alarm.futureOrSpot.charAt(0).toUpperCase() +
-                    alarm.futureOrSpot.slice(1)} */}
-                  {alarm.featureOrSpot.charAt(0).toUpperCase() +
-                    alarm.featureOrSpot.slice(1)}
+                  {alarm.futureOrSpot.charAt(0).toUpperCase() +
+                    alarm.futureOrSpot.slice(1)}
                 </Text>
               </View>
             </View>
@@ -205,7 +208,7 @@ const RenderAlarm = ({
               color: "#626770",
             }}
           >
-            Current Price
+            Initial Price
           </Text>
           <View
             style={{
@@ -221,7 +224,7 @@ const RenderAlarm = ({
                 fontSize: 18,
               }}
             >
-              {loading ? "—" : formatPrice(price)}
+              {formatPrice(alarm.initialPrice ?? null)}
             </Text>
             <Text
               style={{
@@ -253,7 +256,7 @@ const RenderAlarm = ({
               color: "#626770",
             }}
           >
-            Triggered Price
+            {alarm.triggered ? "Triggered Price" : "Target Price"}
           </Text>
           <View
             style={{
@@ -270,7 +273,7 @@ const RenderAlarm = ({
                 maxWidth: "75%",
               }}
             >
-              {alarm.triggered ? formatPrice(alarm.target) : "—"}
+              {formatPrice(alarm.target)}
             </Text>
             <Text
               style={{

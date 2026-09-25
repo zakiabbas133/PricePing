@@ -3,6 +3,9 @@ import { StatusBar } from "expo-status-bar";
 import { StyleSheet, View } from "react-native";
 import { NavigationContainer } from "@react-navigation/native";
 import { useFonts } from "expo-font";
+import { Provider } from "react-redux";
+import { PersistGate } from "redux-persist/integration/react";
+import { persistor, store } from "./src/store/store";
 import AppSplashScreen from "./src/screens/SplashScreen";
 import PricePingStack from "./src/navigation/StackNavigator";
 
@@ -37,14 +40,17 @@ export default function App() {
   }
 
   return (
-    <View style={styles.container}>
-      <NavigationContainer>
-        {/* <PricePingTabs /> */}
-        <PricePingStack />
-      </NavigationContainer>
+    <Provider store={store}>
+      <PersistGate loading={null} persistor={persistor}>
+        <View style={styles.container}>
+          <NavigationContainer>
+            <PricePingStack />
+          </NavigationContainer>
 
-      <StatusBar animated={true} style="dark" />
-    </View>
+          <StatusBar animated={true} style="dark" />
+        </View>
+      </PersistGate>
+    </Provider>
   );
 }
 
