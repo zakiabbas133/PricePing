@@ -30,7 +30,7 @@ const Alarms = () => {
   const alarmsOnBackend = async () => {
     try {
       const res = await getAlarms(userId || "");
-      if(res.success) {
+      if (res.success) {        
         dispatch(setAlarms(res.data));
       }
     } catch (error) {

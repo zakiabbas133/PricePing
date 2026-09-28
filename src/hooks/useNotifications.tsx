@@ -320,8 +320,11 @@ const useNotifications = () => {
     );
 
     const responseListener =
-      Notifications.addNotificationResponseReceivedListener(() => {
+      Notifications.addNotificationResponseReceivedListener((e) => {
         // Handle notification response if required.
+        const notif = e;
+        // console.log(notif);
+        
       });
 
     return () => {

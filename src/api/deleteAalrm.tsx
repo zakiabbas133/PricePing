@@ -1,8 +1,8 @@
 import Constants from "expo-constants";
 const deleteAlarmFromDb = async (id: number) => {  
   try {
-    // const apiBaseUrl = Constants.expoConfig?.extra?.apiBaseUrl; // LIVE
-    const apiBaseUrl = Constants.expoConfig?.extra?.localApiBaseUrl; // LOCAL
+    const apiBaseUrl = Constants.expoConfig?.extra?.apiBaseUrl; // LIVE
+    // const apiBaseUrl = Constants.expoConfig?.extra?.localApiBaseUrl; // LOCAL
 
     const xApiKey = Constants.expoConfig?.extra?.xApiKey;
     const response = await fetch(`${apiBaseUrl}/api/Notifications/deleteAlarm?id=${id}`, {

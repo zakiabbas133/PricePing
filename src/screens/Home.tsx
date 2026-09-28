@@ -1,6 +1,8 @@
 import { useState } from "react";
 import {
   Alert,
+  KeyboardAvoidingView,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -24,6 +26,7 @@ const SymbolScreen = ({ symbol, setSymbol }: SymbolScreenProps) => {
   const insets = useSafeAreaInsets();
   const { price, status, createAlarm } = useGeneratePrice(symbol);
   const [targetInput, setTargetInput] = useState("");
+  const [priceError, setPriceError] = useState(false);
   const [direction, setDirection] = useState<"above" | "below">("above");
   const [futureOrSpot, setFutureOrSpot] = useState<"future" | "spot">("future");
   const [creating, setCreating] = useState(false);
@@ -43,13 +46,27 @@ const SymbolScreen = ({ symbol, setSymbol }: SymbolScreenProps) => {
     const normalizedSymbol = symbol.trim().toUpperCase();
     const target = Number(targetInput);
 
-    if (!normalizedSymbol) {
-      Alert.alert("Invalid Symbol", "Enter a valid Binance symbol.");
+    if (target < price && direction == "above") {
+      Alert.alert(
+        "Invalid Target",
+        `The target is less than the actual ${normalizedSymbol} price. Please raise your target.`,
+      );
+      setPriceError(true);
+      return;
+    }
+
+    if (target > price && direction == "below") {
+      Alert.alert(
+        "Invalid Target",
+        `The target is more than the actual ${normalizedSymbol} price. Please lower your target.`,
+      );
+      setPriceError(true);
       return;
     }
 
     if (!Number.isFinite(target) || target <= 0) {
       Alert.alert("Invalid Target Price", "Enter a valid target price.");
+      setPriceError(true);
       return;
     }
 
@@ -106,7 +123,10 @@ const SymbolScreen = ({ symbol, setSymbol }: SymbolScreenProps) => {
   };
 
   return (
-    <View style={styles.safeArea}>
+    <KeyboardAvoidingView
+      behavior={Platform.OS == "ios" ? "padding" : "height"}
+      style={styles.safeArea}
+    >
       <ScrollView
         contentContainerStyle={{
           flexGrow: 1,
@@ -181,11 +201,14 @@ const SymbolScreen = ({ symbol, setSymbol }: SymbolScreenProps) => {
 
             <TextInput
               value={targetInput}
-              onChangeText={setTargetInput}
+              onChangeText={(val) => {
+                setTargetInput(val);
+                setPriceError(false);
+              }}
               placeholder="92500"
               placeholderTextColor="#98A2B3"
               keyboardType="decimal-pad"
-              style={styles.input}
+              style={[styles.input, {borderColor: priceError ?  '#f04c4c': '#D0D5DD'}]}
             />
           </View>
 
@@ -299,7 +322,7 @@ const SymbolScreen = ({ symbol, setSymbol }: SymbolScreenProps) => {
           />
         </View>
       </ScrollView>
-    </View>
+    </KeyboardAvoidingView>
   );
 };
 

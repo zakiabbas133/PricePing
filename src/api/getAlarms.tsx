@@ -1,8 +1,8 @@
 import Constants from "expo-constants";
 const getAlarms = async (userId: string) => {
   try {
-    // const apiBaseUrl = Constants.expoConfig?.extra?.apiBaseUrl; // LIVE
-    const apiBaseUrl = Constants.expoConfig?.extra?.localApiBaseUrl; // LOCAL
+    const apiBaseUrl = Constants.expoConfig?.extra?.apiBaseUrl; // LIVE
+    // const apiBaseUrl = Constants.expoConfig?.extra?.localApiBaseUrl; // LOCAL
 
     const xApiKey = Constants.expoConfig?.extra?.xApiKey;
     const response = await fetch(`${apiBaseUrl}/api/Notifications/getAlarms?userId=${userId}`, {
