@@ -717,6 +717,7 @@ eas build:list
 | Preview     | Internal testing/distribution | `eas build --platform android --profile preview`     |
 | Production  | Store/release build           | `eas build --platform android --profile production`  |
 | Production  | Store/auto submit             | `eas build --platform ios --auto-submit`             |
+| Production  | Store/auto submit/ota updates | `eas update --channel production`                    |
 
 A development build contains the development client and is intended for development rather than Play Store distribution.
 

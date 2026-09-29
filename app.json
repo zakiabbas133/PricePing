@@ -23,7 +23,17 @@
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.uzairjamal.priceping"
+      "package": "com.uzairjamal.priceping",
+      "permissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -90,6 +100,12 @@
       "apiBaseUrl": "https://pricepingbackendservice.onrender.com",
       "localApiBaseUrl": "http://10.0.2.2:5009",
       "xApiKey": "pwfmha48UQ7WwkhgZ0E0Q7KrN6PiobLI2TkTEWoE"
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/ae4511eb-9ccc-4f70-8317-63c0dca0afc4"
     }
   }
 }
