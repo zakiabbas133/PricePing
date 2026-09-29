@@ -1,7 +1,7 @@
 import Constants from "expo-constants";
 
-// const apiBaseUrl = Constants.expoConfig?.extra?.apiBaseUrl; // LIVE
-const apiBaseUrl = Constants.expoConfig?.extra?.localApiBaseUrl; // LOCAL
+const apiBaseUrl = Constants.expoConfig?.extra?.apiBaseUrl; // LIVE
+// const apiBaseUrl = Constants.expoConfig?.extra?.localApiBaseUrl; // LOCAL
 
 export const getAppSettings = (userId: string) => {};
 
