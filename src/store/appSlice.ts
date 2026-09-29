@@ -28,10 +28,10 @@ const initialState: AppSliceState = {
     notifications: true,
   },
   selectedSound: {
-    id: "sound1",
+    id: "alarm1",
     soundName: "Classic Alarm Tone",
-    fileName: "sound1",
-    fileFullName: "sound1.mp3",
+    fileName: "alarm1",
+    fileFullName: "alarm1.mp3",
   },
   volume: 0,
   userId: "",

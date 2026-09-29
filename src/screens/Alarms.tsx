@@ -15,6 +15,8 @@ import { setAlarms } from "../store/appSlice";
 import RenderAlarm from "../components/RenderAlarm";
 import useGeneratePrice from "../hooks/useGeneratePrice";
 import getAlarms from "../api/getAlarms";
+import { ModalContent, ModalType } from "./Home";
+import CustomModal from "../components/CustomModal";
 
 const Alarms = () => {
   const insets = useSafeAreaInsets();
@@ -23,14 +25,30 @@ const Alarms = () => {
   const { deleteAlarm } = useGeneratePrice();
   const [activeOrPast, setActiveOrPast] = useState("");
   const [refreshing, setRefreshing] = useState(false);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [modalContent, setModalContent] = useState<ModalContent>({
+    title: "",
+    description: "",
+    type: "success",
+  });
+
   const persistedAlarms = useSelector((state: RootState) => state.app.alarms);
   const pastAlarms = persistedAlarms.filter((x) => x.triggered == true);
   const activeAlarms = persistedAlarms.filter((x) => x.triggered == false);
 
+  const showModal = (
+    title: string,
+    description: string,
+    type: ModalType = "error",
+  ) => {
+    setModalContent({ title, description, type });
+    setModalVisible(true);
+  };
+
   const alarmsOnBackend = async () => {
     try {
       const res = await getAlarms(userId || "");
-      if (res.success) {        
+      if (res.success) {
         dispatch(setAlarms(res.data));
       }
     } catch (error) {
@@ -52,6 +70,37 @@ const Alarms = () => {
         setRefreshing(false);
       });
   }, []);
+
+  const EmptyAlarmState = ({ type }: { type: "active" | "past" }) => {
+    const isActive = type === "active";
+
+    return (
+      <View style={styles.emptyContainer}>
+        <View
+          style={[
+            styles.emptyIconContainer,
+            isActive ? styles.activeEmptyIcon : styles.pastEmptyIcon,
+          ]}
+        >
+          <MaterialCommunityIcons
+            name={isActive ? "bell-outline" : "bell-check-outline"}
+            size={30}
+            color={isActive ? "#2B77F1" : "#667085"}
+          />
+        </View>
+
+        <Text style={styles.emptyTitle}>
+          {isActive ? "No active alarms" : "No past alarms"}
+        </Text>
+
+        <Text style={styles.emptyDescription}>
+          {isActive
+            ? "Your active price alerts will appear here."
+            : "Triggered alarms will appear here once they go off."}
+        </Text>
+      </View>
+    );
+  };
 
   useEffect(() => {
     alarmsOnBackend();
@@ -119,11 +168,7 @@ const Alarms = () => {
             </View>
 
             {activeAlarms.length === 0 ? (
-              <View style={styles.emptyContainer}>
-                <MaterialCommunityIcons name="bell" size={32} color="#98A2B3" />
-
-                <Text style={styles.emptyText}>No active alarms</Text>
-              </View>
+              <EmptyAlarmState type="active" />
             ) : (
               <View style={{ gap: 10 }}>
                 {activeAlarms.map((alarm, index) => {
@@ -131,7 +176,14 @@ const Alarms = () => {
                     <RenderAlarm
                       key={index}
                       alarm={alarm}
-                      deleteAlarm={() => deleteAlarm(alarm.id)}
+                      deleteAlarm={() => {
+                        deleteAlarm(alarm.id);
+                        showModal(
+                          "Delete Alarm",
+                          `Alarm deleted successfully.`,
+                          "success",
+                        );
+                      }}
                     />
                   );
                 })}
@@ -156,11 +208,7 @@ const Alarms = () => {
             </View>
 
             {pastAlarms.length === 0 ? (
-              <View style={styles.emptyContainer}>
-                <MaterialCommunityIcons name="bell" size={32} color="#98A2B3" />
-
-                <Text style={styles.emptyText}>No past alarms</Text>
-              </View>
+              <EmptyAlarmState type="past" />
             ) : (
               <View style={{ gap: 10 }}>
                 {pastAlarms.map((alarm, index) => {
@@ -168,7 +216,14 @@ const Alarms = () => {
                     <RenderAlarm
                       key={index}
                       alarm={alarm}
-                      deleteAlarm={() => deleteAlarm(alarm.id)}
+                      deleteAlarm={() => {
+                        deleteAlarm(alarm.id);
+                        showModal(
+                          "Delete Alarm",
+                          `Alarm deleted successfully.`,
+                          "success",
+                        );
+                      }}
                     />
                   );
                 })}
@@ -176,6 +231,20 @@ const Alarms = () => {
             )}
           </>
         )}
+
+        <CustomModal
+          visible={modalVisible}
+          onClose={() => setModalVisible(false)}
+          title={modalContent.title}
+          message={modalContent.description}
+          icon={
+            modalContent.type === "success"
+              ? "check-circle-outline"
+              : "alert-circle-outline"
+          }
+          iconColor={modalContent.type === "success" ? "#16A34A" : "#DC2626"}
+          confirmText="Okay"
+        />
       </ScrollView>
     </View>
   );
@@ -227,15 +296,49 @@ const styles = StyleSheet.create({
   },
 
   emptyContainer: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "#F9FAFB",
     borderWidth: 1,
-    borderColor: "#E4E7EC",
-    borderRadius: 14,
-    paddingVertical: 25,
-    paddingHorizontal: 10,
+    borderColor: "#EAECF0",
+    borderRadius: 18,
+    paddingVertical: 32,
+    paddingHorizontal: 24,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 12,
+  },
+
+  emptyIconContainer: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 16,
+  },
+
+  activeEmptyIcon: {
+    backgroundColor: "#EEF4FF",
+  },
+
+  pastEmptyIcon: {
+    backgroundColor: "#F2F4F7",
+  },
+
+  emptyTitle: {
+    fontSize: 16,
+    color: "#101828",
+    textAlign: "center",
+    fontFamily: "Outfit-Bold",
+  },
+
+  emptyDescription: {
+    fontSize: 13,
+    lineHeight: 20,
+    color: "#98A2B3",
+    textAlign: "center",
+    marginTop: 6,
+    maxWidth: 260,
+    fontFamily: "Outfit-Medium",
   },
 
   emptyIcon: {

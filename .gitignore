@@ -41,5 +41,5 @@ yarn-error.*
 /android
 
 # google service files
-google-services.json
-GoogleService-Info.plist
+# google-services.json
+# GoogleService-Info.plist

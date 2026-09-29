@@ -1,6 +1,11 @@
 import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { AntDesign, Ionicons } from "@expo/vector-icons";
 import { PriceAlarm } from "../hooks/useGeneratePrice";
+import { useState } from "react";
+import { ModalContent, ModalType } from "../screens/Home";
+import CustomModal from "./CustomModal";
+import CustomDeleteModal from "./CustomDeleteModal";
+import CustomApiLoader from "./CustomApiLoader";
 
 const RenderAlarm = ({
   alarm,
@@ -9,10 +14,26 @@ const RenderAlarm = ({
   alarm: PriceAlarm;
   deleteAlarm: (id: number) => void;
 }) => {
+  const [modalVisible, setModalVisible] = useState(false);
+  const [loadingApi, setLoadingApi] = useState(false);
+  const [modalContent, setModalContent] = useState<ModalContent>({
+    title: "",
+    description: "",
+    type: "warn",
+  });
   const coinImages: Record<string, any> = {
     BTCUSDT: require("../../assets/coins/bitcoin.png"),
     ETHUSDT: require("../../assets/coins/ethereum.png"),
     SOLUSDT: require("../../assets/coins/salana.jpg"),
+  };
+
+  const showModal = (
+    title: string,
+    description: string,
+    type: ModalType = "warn",
+  ) => {
+    setModalContent({ title, description, type });
+    setModalVisible(true);
   };
 
   const showCoin = (symbol: string) => {
@@ -26,6 +47,14 @@ const RenderAlarm = ({
         }}
         source={imgSrc}
       />
+    );
+  };
+
+  const openDeleteAlarmModal = () => {
+    showModal(
+      "Delete Alarm",
+      `Are you sure you want to delete the alarm?`,
+      "success",
     );
   };
 
@@ -149,7 +178,7 @@ const RenderAlarm = ({
                   color: "#626770",
                 }}
               >
-                {formatPrice(alarm.target) + " "}
+                {formatPrice(alarm.targetPrice) + " "}
                 <Text
                   style={{
                     color: "#626770",
@@ -273,7 +302,7 @@ const RenderAlarm = ({
                 maxWidth: "75%",
               }}
             >
-              {formatPrice(alarm.target)}
+              {formatPrice(alarm.targetPrice)}
             </Text>
             <Text
               style={{
@@ -322,10 +351,25 @@ const RenderAlarm = ({
             {formatDateTime(alarm.createdAt)}
           </Text>
         </View>
-        <TouchableOpacity onPress={() => deleteAlarm(alarm.id)}>
+        {/* <TouchableOpacity onPress={() => deleteAlarm(alarm.id)}> */}
+        <TouchableOpacity onPress={openDeleteAlarmModal}>
           <Ionicons name="trash-outline" size={24} color="#B42318" />
         </TouchableOpacity>
       </View>
+
+      <CustomDeleteModal
+        visible={modalVisible}
+        onConfirm={async () => {
+          setLoadingApi(true);
+          await deleteAlarm(alarm.id);
+          setLoadingApi(false);
+        }}
+        onCancel={() => setModalVisible(false)}
+        title={modalContent.title}
+        message={modalContent.description}
+      />
+
+      {loadingApi && <CustomApiLoader />}
     </View>
   );
 };

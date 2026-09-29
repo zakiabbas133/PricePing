@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import {
   Linking,
+  Platform,
   ScrollView,
   StyleSheet,
   Switch,
@@ -10,20 +11,25 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { SimpleLineIcons } from "@expo/vector-icons";
-import Slider from "@react-native-community/slider";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "../store/store";
+import { setVolume } from "../store/appSlice";
+import Slider from "@react-native-community/slider";
 import useGeneratePrice from "../hooks/useGeneratePrice";
+import Constants from "expo-constants";
+import useNotifications from "../hooks/useNotifications";
+import { appVolumeChangeOnDb } from "../api/appSettings";
 
 const Settings = ({ navigation }: any) => {
   const webSocketDocumentationUrl =
     "https://github.com/binance/binance-spot-api-docs/blob/master/web-socket-streams.md?utm_source=chatgpt.com#websocket-streams-for-binance";
   const {
-    changeAppVolume,
     setAlarmSoundNotification,
     setNotificationSoundNotification,
     permissionGranted,
   } = useGeneratePrice();
+
+  const { getOrCreateUserId } = useNotifications();
 
   const selectedSound = useSelector(
     (state: RootState) => state.app.selectedSound,
@@ -31,6 +37,7 @@ const Settings = ({ navigation }: any) => {
   const soundNotificationSettings = useSelector(
     (state: RootState) => state.app.alarmSettings,
   );
+  const dispatch = useDispatch();
   const appVolume = useSelector((state: RootState) => state.app.volume);
   const [showVolume, setShowVolume] = useState(false);
   const volumeRef = useRef(Number(appVolume));
@@ -38,6 +45,14 @@ const Settings = ({ navigation }: any) => {
 
   const openWebsocketDocumentation = () => {
     Linking.openURL(webSocketDocumentationUrl);
+  };
+
+  const changeAppVolumeOnBackend = async (vol: number) => {
+    const userId = await getOrCreateUserId();
+    const res = await appVolumeChangeOnDb(vol, userId ?? "");
+    if (res?.success) {
+      dispatch(setVolume(res?.data?.appVolume));
+    }
   };
 
   return (
@@ -155,7 +170,7 @@ const Settings = ({ navigation }: any) => {
                     right: 0,
                     borderRadius: 99,
                     paddingHorizontal: 5,
-                    paddingVertical: 10,
+                    paddingVertical: Platform.OS == 'android' ? 10 : 5,
                     shadowColor: "#000",
                     shadowOffset: {
                       width: 0,
@@ -176,16 +191,11 @@ const Settings = ({ navigation }: any) => {
                     thumbSize={20}
                     thumbTintColor="#2B77F1"
                     value={appVolume}
-                    onValueChange={(val) => {
-                      volumeRef.current = val;
-                      changeAppVolume(val);
-                    }}
-                    step={0.01}
-                    onTouchEnd={() => {
-                      const finalVolume = volumeRef.current;
-                      changeAppVolume(finalVolume);
+                    onSlidingComplete={(val) => {
+                      changeAppVolumeOnBackend(val);
                       setShowVolume(false);
                     }}
+                    step={0.01}
                   />
                 </View>
               )}
@@ -354,7 +364,7 @@ const Settings = ({ navigation }: any) => {
                     fontFamily: "Outfit-Regular",
                   }}
                 >
-                  Version 1.0.0
+                  Version {Constants?.expoConfig?.version || "1.0.0"}
                 </Text>
               </View>
             </View>
@@ -471,6 +481,13 @@ const styles = StyleSheet.create({
     shadowRadius: 1.0,
     elevation: 1,
     marginTop: 10,
+  },
+
+  primaryButtonText: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "600",
+    fontFamily: "Outfit-SemiBold",
   },
 
   cardWithoutShadow: {

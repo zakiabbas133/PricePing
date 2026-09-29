@@ -1,6 +1,5 @@
 import { useState } from "react";
 import {
-  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -14,25 +13,46 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import AntDesign from "@expo/vector-icons/AntDesign";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
+
 import DropdownElement from "../components/Dropdown";
+import CustomModal from "../components/CustomModal";
 import useGeneratePrice from "../hooks/useGeneratePrice";
+import CustomApiLoader from "../components/CustomApiLoader";
 
 type SymbolScreenProps = {
   symbol: string;
   setSymbol: (symbol: string) => void;
 };
 
+export type ModalType = "error" | "success" | "warn";
+
+export type ModalContent = {
+  title: string;
+  description: string;
+  type: ModalType;
+};
+
 const SymbolScreen = ({ symbol, setSymbol }: SymbolScreenProps) => {
   const insets = useSafeAreaInsets();
   const { price, status, createAlarm } = useGeneratePrice(symbol);
+
   const [targetInput, setTargetInput] = useState("");
   const [priceError, setPriceError] = useState(false);
+  const [modalVisible, setModalVisible] = useState(false);
+
+  const [modalContent, setModalContent] = useState<ModalContent>({
+    title: "",
+    description: "",
+    type: "success",
+  });
+
   const [direction, setDirection] = useState<"above" | "below">("above");
   const [futureOrSpot, setFutureOrSpot] = useState<"future" | "spot">("future");
   const [creating, setCreating] = useState(false);
+  const [loadingApi, setLoadingApi] = useState(false);
 
-  const formatPrice = (value: number | null) => {
-    if (value === null || value === undefined) {
+  const formatPrice = (value: number | null | undefined) => {
+    if (value == null || !Number.isFinite(value)) {
       return "—";
     }
 
@@ -42,52 +62,94 @@ const SymbolScreen = ({ symbol, setSymbol }: SymbolScreenProps) => {
     });
   };
 
+  const showModal = (
+    title: string,
+    description: string,
+    type: ModalType = "error",
+  ) => {
+    setModalContent({ title, description, type });
+    setModalVisible(true);
+  };
+
   const handleCreateAlarm = async () => {
+    if (creating) return;
+
     const normalizedSymbol = symbol.trim().toUpperCase();
-    const target = Number(targetInput);
+    const normalizedInput = targetInput.trim();
+    const target = Number(normalizedInput);
 
-    if (target < price && direction == "above") {
-      Alert.alert(
-        "Invalid Target",
-        `The target is less than the actual ${normalizedSymbol} price. Please raise your target.`,
-      );
+    // Validate empty, invalid, zero, and negative target prices.
+    if (!normalizedInput || !Number.isFinite(target) || target <= 0) {
       setPriceError(true);
+
+      showModal(
+        "Invalid Target Price",
+        "Please enter a valid target price greater than zero.",
+      );
+
       return;
     }
 
-    if (target > price && direction == "below") {
-      Alert.alert(
-        "Invalid Target",
-        `The target is more than the actual ${normalizedSymbol} price. Please lower your target.`,
+    // Ensure the current market price is available.
+    if (price == null || !Number.isFinite(price) || price <= 0) {
+      showModal(
+        "Price Unavailable",
+        "Please wait until the current market price is available, then try again.",
       );
-      setPriceError(true);
+
       return;
     }
 
-    if (!Number.isFinite(target) || target <= 0) {
-      Alert.alert("Invalid Target Price", "Enter a valid target price.");
+    // An Above alarm must have a target at or above the current price.
+    if (direction === "above" && target < price) {
       setPriceError(true);
+
+      showModal(
+        "Invalid Target Price",
+        `The target price is below the current ${normalizedSymbol} price. Please raise your target.`,
+      );
+
+      return;
+    }
+
+    // A Below alarm must have a target at or below the current price.
+    if (direction === "below" && target > price) {
+      setPriceError(true);
+
+      showModal(
+        "Invalid Target Price",
+        `The target price is above the current ${normalizedSymbol} price. Please lower your target.`,
+      );
+
       return;
     }
 
     try {
       setCreating(true);
-
+      setLoadingApi(true);
       await createAlarm(normalizedSymbol, target, direction, futureOrSpot);
 
       setTargetInput("");
+      setPriceError(false);
 
-      Alert.alert(
+      showModal(
         "Alarm Created",
         `${normalizedSymbol} alarm created successfully.`,
+        "success",
       );
+
+      setLoadingApi(false);
     } catch (error) {
-      Alert.alert(
+      showModal(
         "Unable to Create Alarm",
-        error instanceof Error ? error.message : "Something went wrong.",
+        error instanceof Error
+          ? error.message
+          : "Something went wrong. Please try again.",
       );
+      setLoadingApi(false);
     } finally {
       setCreating(false);
+      setLoadingApi(false);
     }
   };
 
@@ -124,7 +186,7 @@ const SymbolScreen = ({ symbol, setSymbol }: SymbolScreenProps) => {
 
   return (
     <KeyboardAvoidingView
-      behavior={Platform.OS == "ios" ? "padding" : "height"}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
       style={styles.safeArea}
     >
       <ScrollView
@@ -151,10 +213,11 @@ const SymbolScreen = ({ symbol, setSymbol }: SymbolScreenProps) => {
             <Text style={styles.label}>Crypto Pair</Text>
 
             <DropdownElement
+              value={symbol}
               setValue={(value: string) => {
                 setSymbol(value.trim().toUpperCase());
+                setPriceError(false);
               }}
-              value={symbol}
             />
           </View>
 
@@ -201,14 +264,21 @@ const SymbolScreen = ({ symbol, setSymbol }: SymbolScreenProps) => {
 
             <TextInput
               value={targetInput}
-              onChangeText={(val) => {
-                setTargetInput(val);
+              onChangeText={(value) => {
+                setTargetInput(value);
                 setPriceError(false);
               }}
               placeholder="92500"
               placeholderTextColor="#98A2B3"
               keyboardType="decimal-pad"
-              style={[styles.input, {borderColor: priceError ?  '#f04c4c': '#D0D5DD'}]}
+              editable={!creating}
+              accessibilityLabel="Target price"
+              style={[
+                styles.input,
+                {
+                  borderColor: priceError ? "#F04438" : "#D0D5DD",
+                },
+              ]}
             />
           </View>
 
@@ -219,7 +289,10 @@ const SymbolScreen = ({ symbol, setSymbol }: SymbolScreenProps) => {
             <View style={styles.directionContainer}>
               {/* Above */}
               <Pressable
-                onPress={() => setDirection("above")}
+                onPress={() => {
+                  setDirection("above");
+                  setPriceError(false);
+                }}
                 style={[
                   styles.directionButton,
                   direction === "above" && styles.aboveSelected,
@@ -228,7 +301,7 @@ const SymbolScreen = ({ symbol, setSymbol }: SymbolScreenProps) => {
                 <AntDesign
                   name="arrow-up"
                   size={15}
-                  color={direction === "above" ? "#fff" : "#000"}
+                  color={direction === "above" ? "#FFFFFF" : "#000000"}
                 />
 
                 <Text
@@ -243,7 +316,10 @@ const SymbolScreen = ({ symbol, setSymbol }: SymbolScreenProps) => {
 
               {/* Below */}
               <Pressable
-                onPress={() => setDirection("below")}
+                onPress={() => {
+                  setDirection("below");
+                  setPriceError(false);
+                }}
                 style={[
                   styles.directionButton,
                   direction === "below" && styles.belowSelected,
@@ -252,7 +328,7 @@ const SymbolScreen = ({ symbol, setSymbol }: SymbolScreenProps) => {
                 <AntDesign
                   name="arrow-down"
                   size={15}
-                  color={direction === "below" ? "#fff" : "#000"}
+                  color={direction === "below" ? "#FFFFFF" : "#000000"}
                 />
 
                 <Text
@@ -271,9 +347,10 @@ const SymbolScreen = ({ symbol, setSymbol }: SymbolScreenProps) => {
           <TouchableOpacity
             disabled={creating}
             onPress={handleCreateAlarm}
+            activeOpacity={0.8}
             style={[styles.primaryButton, creating && styles.disabledButton]}
           >
-            <MaterialCommunityIcons name="bell" size={16} color="#fff" />
+            <MaterialCommunityIcons name="bell" size={16} color="#FFFFFF" />
 
             <Text style={styles.primaryButtonText}>
               {creating ? "Creating..." : "Set Alarm"}
@@ -286,12 +363,18 @@ const SymbolScreen = ({ symbol, setSymbol }: SymbolScreenProps) => {
           <View style={styles.priceHeader}>
             <Text style={styles.currentPriceLabel}>Current Price</Text>
 
+            {/* Replace this placeholder with a real 24-hour change value
+                if your price hook provides one. */}
             <Text style={styles.percentageText}>+1.24%</Text>
           </View>
 
           <View style={styles.priceRow}>
             <View style={styles.priceValueContainer}>
-              <Text style={styles.currentPrice}>{formatPrice(price)}</Text>
+              <Text style={styles.currentPrice}>
+                {status == "connecting" || price == 0
+                  ? "—"
+                  : formatPrice(price)}
+              </Text>
 
               <Text style={styles.currencyText}>USDT</Text>
             </View>
@@ -300,15 +383,13 @@ const SymbolScreen = ({ symbol, setSymbol }: SymbolScreenProps) => {
           </View>
         </View>
 
-        {/* Connection */}
+        {/* Connection Status */}
         <View style={styles.connectionCard}>
           <View style={styles.connectionLeft}>
             <View
               style={[
                 styles.connectionDot,
-                {
-                  backgroundColor: getConnectionColor(),
-                },
+                { backgroundColor: getConnectionColor() },
               ]}
             />
 
@@ -322,6 +403,22 @@ const SymbolScreen = ({ symbol, setSymbol }: SymbolScreenProps) => {
           />
         </View>
       </ScrollView>
+
+      {/* Shared Modal for Validation, Errors, and Success */}
+      <CustomModal
+        visible={modalVisible}
+        onClose={() => setModalVisible(false)}
+        title={modalContent.title}
+        message={modalContent.description}
+        icon={
+          modalContent.type === "success"
+            ? "check-circle-outline"
+            : "alert-circle-outline"
+        }
+        iconColor={modalContent.type === "success" ? "#16A34A" : "#DC2626"}
+        confirmText="Okay"
+      />
+      {loadingApi && <CustomApiLoader />}
     </KeyboardAvoidingView>
   );
 };
@@ -329,17 +426,8 @@ const SymbolScreen = ({ symbol, setSymbol }: SymbolScreenProps) => {
 /**
  * Parent component.
  *
- * The important part is:
- *
- * <SymbolScreen key={symbolInput} />
- *
- * React treats every symbol as a completely different
- * component instance.
- *
- * BTCUSDT -> SOLUSDT
- *
- * BTC hook is destroyed.
- * SOL hook is created.
+ * Changing the selected symbol remounts SymbolScreen,
+ * so useGeneratePrice subscribes to the selected symbol.
  */
 const Home = () => {
   const [symbolInput, setSymbolInput] = useState("BTCUSDT");
@@ -358,7 +446,7 @@ export default Home;
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#ffffff",
+    backgroundColor: "#FFFFFF",
   },
 
   headerTitle: {
@@ -373,6 +461,7 @@ const styles = StyleSheet.create({
     color: "#626770",
     marginBottom: 10,
     fontFamily: "Outfit-Medium",
+    paddingTop: 10,
   },
 
   card: {
@@ -383,13 +472,13 @@ const styles = StyleSheet.create({
     padding: 18,
     marginBottom: 16,
 
-    shadowColor: "#000",
+    shadowColor: "#000000",
     shadowOffset: {
       width: 0,
       height: 1,
     },
     shadowOpacity: 0.18,
-    shadowRadius: 1.0,
+    shadowRadius: 1,
 
     elevation: 1,
   },
@@ -478,7 +567,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
 
     borderWidth: 1,
-    borderColor: "#D0D5DD",
+    borderColor: "#1677FF",
     borderRadius: 10,
 
     backgroundColor: "#1677FF",
@@ -503,7 +592,7 @@ const styles = StyleSheet.create({
 
   currentPriceLabel: {
     fontSize: 15,
-    color: "#000",
+    color: "#000000",
     fontFamily: "Outfit-Regular",
   },
 
@@ -527,7 +616,7 @@ const styles = StyleSheet.create({
 
   currentPrice: {
     fontSize: 26,
-    color: "#000",
+    color: "#000000",
     fontFamily: "Outfit-Bold",
   },
 
@@ -555,13 +644,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
 
-    shadowColor: "#000",
+    shadowColor: "#000000",
     shadowOffset: {
       width: 0,
       height: 1,
     },
     shadowOpacity: 0.18,
-    shadowRadius: 1.0,
+    shadowRadius: 1,
 
     elevation: 1,
   },

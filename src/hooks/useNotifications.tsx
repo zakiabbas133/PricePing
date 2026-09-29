@@ -5,9 +5,16 @@ import * as Notifications from "expo-notifications";
 import Constants from "expo-constants";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-import { setUserId } from "../store/appSlice";
+import {
+  setAlarms,
+  setNotificationsEnabled,
+  setSoundEnabled,
+  setUserId,
+  setVolume,
+} from "../store/appSlice";
 import ConnectToApi from "../api/connectToApi";
 import { RootState } from "../store/store";
+import { createUserAppSettings } from "../api/appSettings";
 
 const CHANNEL_ALARM_1 = "price-alerts-alarm1";
 const CHANNEL_ALARM_2 = "price-alerts-alarm2";
@@ -187,10 +194,22 @@ const useNotifications = () => {
           token,
           Platform.OS,
           Constants.deviceName || "",
-        );        
+        );
+
+        const responseAppSettings = await createUserAppSettings(newUserId);
 
         if (!response?.success) {
           throw new Error("Unable to register push token.");
+        }
+
+        if (responseAppSettings?.success) {
+          dispatch(
+            setNotificationsEnabled(
+              responseAppSettings?.data?.playNotifications,
+            ),
+          );
+          dispatch(setSoundEnabled(responseAppSettings?.data?.playAlarmSound));
+          dispatch(setVolume(responseAppSettings?.data?.appVolume));
         }
 
         /*
@@ -313,6 +332,19 @@ const useNotifications = () => {
 
     const notificationListener = Notifications.addNotificationReceivedListener(
       (receivedNotification) => {
+        // console.log(
+        //   "Notification:",
+        //   JSON.stringify(receivedNotification, null, 2),
+        // );
+
+        const data = receivedNotification.request.content.data;
+
+        const alarms = data?.alarms;
+
+        if (Array.isArray(alarms)) {
+          dispatch(setAlarms(alarms));
+        }
+
         if (mounted) {
           setNotification(receivedNotification);
         }
@@ -320,12 +352,12 @@ const useNotifications = () => {
     );
 
     const responseListener =
-      Notifications.addNotificationResponseReceivedListener((e) => {
-        // Handle notification response if required.
-        const notif = e;
-        // console.log(notif);
-        
-      });
+      Notifications.addNotificationResponseReceivedListener(
+        (receivedNotification) => {
+          // Handle notification response if required.
+          console.log("b", JSON.stringify(receivedNotification));
+        },
+      );
 
     return () => {
       mounted = false;

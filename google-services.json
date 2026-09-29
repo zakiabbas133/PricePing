@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "821101590953",
+    "project_id": "priceping-796dd",
+    "storage_bucket": "priceping-796dd.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:821101590953:android:b3124c66ec8ec28ae3ecb8",
+        "android_client_info": {
+          "package_name": "com.uzairjamal.priceping"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDDjZ9mJntcSlIucbKnqJ6pe41Ide-LSQY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

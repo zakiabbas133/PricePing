@@ -16,24 +16,29 @@ import { Ionicons, SimpleLineIcons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch, RootState } from "../store/store";
-import useGeneratePrice from "../hooks/useGeneratePrice";
+import { setSelectedSound } from "../store/appSlice";
+import { updateAlarmSoundOnDb } from "../api/appSettings";
+import useNotifications from "../hooks/useNotifications";
+import CustomApiLoader from "../components/CustomApiLoader";
+import CustomModal from "../components/CustomModal";
+import { ModalContent, ModalType } from "./Home";
 
 export type SoundItem = {
   id: string;
   name: string;
   description: string;
-  source: any;
+  source: number;
 };
 
 const SOUNDS: SoundItem[] = [
   {
-    id: "sound1",
+    id: "alarm1",
     name: "Alarm 1",
     description: "Classic alarm tone",
     source: require("../../assets/sounds/alarm1.mp3"),
   },
   {
-    id: "sound2",
+    id: "alarm2",
     name: "Alarm 2",
     description: "Gentle alert",
     source: require("../../assets/sounds/alarm2.mp3"),
@@ -42,17 +47,62 @@ const SOUNDS: SoundItem[] = [
 
 const AlarmSounds = ({ navigation }: any) => {
   const insets = useSafeAreaInsets();
-  const { setAlarmSound } = useGeneratePrice();
+  const { getOrCreateUserId } = useNotifications();
+  const userId = getOrCreateUserId();
   const dispatch = useDispatch<AppDispatch>();
   const selectedSound = useSelector(
     (state: RootState) => state.app.selectedSound,
   );
+  const volume = useSelector((state: RootState) => state.app.volume);
+  console.log(volume);
+
+  const [userSelectedSound, setUserSelectedSound] = useState(selectedSound.id);
   const [playingId, setPlayingId] = useState<string | null>(null);
   const [loadingId, setLoadingId] = useState<string | null>(null);
+  const [loadingApi, setLoadingApi] = useState(false);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [modalContent, setModalContent] = useState<ModalContent>({
+    title: "",
+    description: "",
+    type: "error",
+  });
 
   const currentSound = SOUNDS.find((sound) => sound.id === playingId);
+
   const player = useAudioPlayer(currentSound?.source ?? SOUNDS[0].source);
   const status = useAudioPlayerStatus(player);
+  player.volume = volume;
+
+  const updateAlarmSound = async (userId: any, sound: any) => {
+    setLoadingApi(true);
+    const userIdToSend = await userId;
+    const res = await updateAlarmSoundOnDb(userIdToSend, sound);
+    if (res.success) {
+      showModal("Alarm Sound", `Alarm sound updated successfully.`, "success");
+      dispatch(
+        setSelectedSound({
+          id: res.data.alarmSound,
+          soundName:
+            SOUNDS.find((x) => x.id == userSelectedSound)?.name || "Alarm 1",
+          fileName:
+            SOUNDS.find((x) => x.id == userSelectedSound)?.id || "alarm1",
+          fileFullName: `${SOUNDS.find((x) => x.id == userSelectedSound)?.id}.mp3`,
+        }),
+      );
+    } else {
+      showModal("Alarm Sound", `Unable to update alarm sound.`, "error");
+    }
+    setLoadingApi(false);
+  };
+
+  const showModal = (
+    title: string,
+    description: string,
+    type: ModalType = "error",
+  ) => {
+    setModalContent({ title, description, type });
+    setModalVisible(true);
+  };
 
   useEffect(() => {
     const configureAudio = async () => {
@@ -90,7 +140,7 @@ const AlarmSounds = ({ navigation }: any) => {
   const selectSound = useCallback(
     async (sound: SoundItem) => {
       try {
-        setAlarmSound(sound);
+        setUserSelectedSound(sound.id);
       } catch (error) {
         console.error("Failed to save selected sound:", error);
       }
@@ -123,7 +173,7 @@ const AlarmSounds = ({ navigation }: any) => {
   );
 
   const renderSound = ({ item }: { item: SoundItem }) => {
-    const isSelected = selectedSound.id === item.id;
+    const isSelected = userSelectedSound === item.id;
     const isPlaying = playingId === item.id;
     const isLoading = loadingId === item.id;
     const progress =
@@ -210,6 +260,7 @@ const AlarmSounds = ({ navigation }: any) => {
         styles.container,
         {
           paddingTop: insets.top,
+          paddingBottom: insets.bottom + 5,
         },
       ]}
     >
@@ -260,12 +311,40 @@ const AlarmSounds = ({ navigation }: any) => {
         renderItem={renderSound}
         contentContainerStyle={[
           {
-            paddingBottom: insets.bottom + 5,
+            flexGrow: 1,
+            marginBottom: 10,
           },
         ]}
         showsVerticalScrollIndicator={false}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
       />
+
+      <TouchableOpacity
+        onPress={() => updateAlarmSound(userId, userSelectedSound)}
+        style={{
+          backgroundColor: "#2B77F1",
+          paddingVertical: 10,
+          alignItems: "center",
+          justifyContent: "center",
+          borderRadius: 10,
+        }}
+      >
+        <Text style={styles.primaryButtonText}>Set Alarm Sound</Text>
+      </TouchableOpacity>
+      <CustomModal
+        visible={modalVisible}
+        onClose={() => setModalVisible(false)}
+        title={modalContent.title}
+        message={modalContent.description}
+        icon={
+          modalContent.type === "success"
+            ? "check-circle-outline"
+            : "alert-circle-outline"
+        }
+        iconColor={modalContent.type === "success" ? "#16A34A" : "#DC2626"}
+        confirmText="Okay"
+      />
+      {loadingApi && <CustomApiLoader />}
     </View>
   );
 };
@@ -385,6 +464,13 @@ const styles = StyleSheet.create({
   // listContent: {
   //   paddingBottom: 30,
   // },
+
+  primaryButtonText: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "600",
+    fontFamily: "Outfit-SemiBold",
+  },
 
   soundCard: {
     flexDirection: "row",

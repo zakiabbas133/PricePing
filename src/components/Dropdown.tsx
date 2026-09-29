@@ -29,9 +29,9 @@ const DropdownElement = ({
 }) => {
   //   const [value, setValue] = useState(null);
   const [isFocus, setIsFocus] = useState(false);
-  const [selectedImage, setSelectedImage] = useState(
-    require("../../assets/coins/bitcoin.png"),
-  );
+  const selectedImage =
+    data.find((item) => item.value === value)?.image ??
+    require("../../assets/coins/bitcoin.png");
 
   const renderLabel = () => {
     if (value || isFocus) {
@@ -69,7 +69,6 @@ const DropdownElement = ({
         onChange={(item) => {
           setValue(item.value);
           setIsFocus(false);
-          setSelectedImage(item.image);
         }}
         itemContainerStyle={{ paddingVertical: 10 }}
         renderLeftIcon={() => (

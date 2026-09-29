@@ -1,12 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useDispatch } from "react-redux";
 import {
-  deleteSelectedAlarm,
   setAlarms,
   setNotificationsEnabled,
   setSelectedSound,
   setSoundEnabled,
-  setVolume,
 } from "../store/appSlice";
 import { SoundItem } from "../screens/AlarmSounds";
 import useNotifications from "./useNotifications";
@@ -22,7 +20,7 @@ type BinanceTrade = {
 export type PriceAlarm = {
   id: number;
   symbol: string;
-  target: number;
+  targetPrice: number;
   direction: AlarmDirection;
   triggered: boolean;
   triggeredPrice?: number;
@@ -70,13 +68,6 @@ const useGeneratePrice = (initialCurreny = "BTCUSDT") => {
 
   const alarmLastPriceRef = useRef<Map<number, number>>(new Map());
 
-  const changeAppVolume = useCallback(
-    (volume: number) => {
-      dispatch(setVolume(volume));
-    },
-    [dispatch],
-  );
-
   const setAlarmSoundNotification = useCallback(
     (enabled: boolean) => {
       if (!permissionGranted) {
@@ -116,7 +107,7 @@ const useGeneratePrice = (initialCurreny = "BTCUSDT") => {
   const deleteAlarm = useCallback(
     async (alarmId: number) => {
       const res = await deleteAlarmFromDb(alarmId);
-      if(res.success) {
+      if (res.success) {
         dispatch(setAlarms(res.data));
       }
     },
@@ -263,7 +254,7 @@ const useGeneratePrice = (initialCurreny = "BTCUSDT") => {
       const newAlarm: PriceAlarm = {
         id: nextIdRef.current++,
         symbol: normalizedSymbol,
-        target: normalizedTarget,
+        targetPrice: normalizedTarget,
         direction: direction as AlarmDirection,
         triggered: false,
         createdAt,
@@ -331,7 +322,6 @@ const useGeneratePrice = (initialCurreny = "BTCUSDT") => {
     createAlarm,
     deleteAlarm,
     setAlarmSound,
-    changeAppVolume,
     setAlarmSoundNotification,
     setNotificationSoundNotification,
   };
