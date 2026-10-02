@@ -352,12 +352,9 @@ const useNotifications = () => {
     );
 
     const responseListener =
-      Notifications.addNotificationResponseReceivedListener(
-        (receivedNotification) => {
-          // Handle notification response if required.
-          console.log("b", JSON.stringify(receivedNotification));
-        },
-      );
+      Notifications.addNotificationResponseReceivedListener(() => {
+        // Handle notification response if required.
+      });
 
     return () => {
       mounted = false;
