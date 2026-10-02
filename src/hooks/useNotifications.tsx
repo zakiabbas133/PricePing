@@ -12,6 +12,7 @@ import {
   setUserId,
   setVolume,
 } from "../store/appSlice";
+
 import ConnectToApi from "../api/connectToApi";
 import { RootState } from "../store/store";
 import { createUserAppSettings } from "../api/appSettings";
@@ -24,7 +25,9 @@ const USER_ID_KEY = "@priceping_user_id";
 const SOUND_ALARM_1 = "alarm1.mp3";
 const SOUND_ALARM_2 = "alarm2.mp3";
 
-export type NotificationSound = typeof SOUND_ALARM_1 | typeof SOUND_ALARM_2;
+export type NotificationSound =
+  | typeof SOUND_ALARM_1
+  | typeof SOUND_ALARM_2;
 
 type NotificationData = Record<string, unknown>;
 
@@ -35,9 +38,10 @@ export type NotificationPayload = {
   sound?: NotificationSound;
 };
 
-export type ScheduledNotificationPayload = NotificationPayload & {
-  seconds: number;
-};
+export type ScheduledNotificationPayload =
+  NotificationPayload & {
+    seconds: number;
+  };
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -48,41 +52,52 @@ Notifications.setNotificationHandler({
   }),
 });
 
-const getChannelId = (sound: NotificationSound) => {
-  return sound === SOUND_ALARM_2 ? CHANNEL_ALARM_2 : CHANNEL_ALARM_1;
-};
+const getChannelId = (sound: NotificationSound) =>
+  sound === SOUND_ALARM_2
+    ? CHANNEL_ALARM_2
+    : CHANNEL_ALARM_1;
 
-const generateGUID = () => {
-  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
-    const r = (Math.random() * 16) | 0;
-    const v = c === "x" ? r : (r & 0x3) | 0x8;
+const generateGUID = () =>
+  "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(
+    /[xy]/g,
+    (c) => {
+      const r = (Math.random() * 16) | 0;
+      const v = c === "x" ? r : (r & 0x3) | 0x8;
 
-    return v.toString(16);
-  });
-};
+      return v.toString(16);
+    },
+  );
 
 const useNotifications = () => {
   const dispatch = useDispatch();
 
-  const reduxUserId = useSelector((state: RootState) => state.app.userId);
-
-  const reduxUserIdRef = useRef<string | null>(reduxUserId || null);
-
-  const userIdPromiseRef = useRef<Promise<string | null> | null>(null);
-
-  const [channels, setChannels] = useState<Notifications.NotificationChannel[]>(
-    [],
+  const reduxUserId = useSelector(
+    (state: RootState) => state.app.userId,
   );
+
+  const reduxUserIdRef = useRef<string | null>(
+    reduxUserId || null,
+  );
+
+  const userIdPromiseRef =
+    useRef<Promise<string | null> | null>(null);
+
+  const tokenSyncPromiseRef =
+    useRef<Promise<string | null> | null>(null);
+
+  const [channels, setChannels] = useState<
+    Notifications.NotificationChannel[]
+  >([]);
 
   const [notification, setNotification] =
     useState<Notifications.Notification | null>(null);
 
   const [loading, setLoading] = useState(true);
-  const [permissionGranted, setPermissionGranted] = useState(false);
+  const [permissionGranted, setPermissionGranted] =
+    useState(false);
 
   /*
-   * Keep the latest Redux userId available without making
-   * callbacks depend on userId and recreating constantly.
+   * Always keep the latest Redux userId in memory.
    */
   useEffect(() => {
     if (reduxUserId) {
@@ -90,14 +105,21 @@ const useNotifications = () => {
     }
   }, [reduxUserId]);
 
+  /*
+   * ---------------------------------------------------------
+   * PERMISSIONS
+   * ---------------------------------------------------------
+   */
   const requestPermissions = useCallback(async () => {
     try {
-      const existing = await Notifications.getPermissionsAsync();
+      const existing =
+        await Notifications.getPermissionsAsync();
 
       let status = existing.status;
 
       if (status !== "granted") {
-        const requested = await Notifications.requestPermissionsAsync();
+        const requested =
+          await Notifications.requestPermissionsAsync();
 
         status = requested.status;
       }
@@ -108,7 +130,10 @@ const useNotifications = () => {
 
       return granted;
     } catch (error) {
-      console.error("Notification permission error:", error);
+      console.error(
+        "Notification permission error:",
+        error,
+      );
 
       setPermissionGranted(false);
 
@@ -117,20 +142,23 @@ const useNotifications = () => {
   }, []);
 
   /*
-   * This is the single source of truth for obtaining
-   * the device's persistent user ID.
+   * ---------------------------------------------------------
+   * GET OR CREATE USER ID
+   * ---------------------------------------------------------
+   *
+   * The userId NEVER changes just because the push token
+   * changes.
    */
   const getOrCreateUserId = useCallback(async () => {
     /*
-     * Already available in memory.
+     * Already in memory.
      */
     if (reduxUserIdRef.current) {
       return reduxUserIdRef.current;
     }
 
     /*
-     * If another call is already resolving the user ID,
-     * wait for the same promise instead of creating another ID.
+     * Another request is already creating/loading it.
      */
     if (userIdPromiseRef.current) {
       return userIdPromiseRef.current;
@@ -139,9 +167,10 @@ const useNotifications = () => {
     const promise = (async () => {
       try {
         /*
-         * First check AsyncStorage.
+         * First check persistent storage.
          */
-        const storedUserId = await AsyncStorage.getItem(USER_ID_KEY);
+        const storedUserId =
+          await AsyncStorage.getItem(USER_ID_KEY);
 
         if (storedUserId) {
           reduxUserIdRef.current = storedUserId;
@@ -152,8 +181,11 @@ const useNotifications = () => {
         }
 
         /*
-         * No existing ID. We need notification permission
-         * because this ID is associated with the push token.
+         * New installation/user.
+         *
+         * We need notification permission before registering
+         * the device because the userId is associated with
+         * push notification registration.
          */
         const granted = await requestPermissions();
 
@@ -161,23 +193,29 @@ const useNotifications = () => {
           return null;
         }
 
-        const projectId = Constants.expoConfig?.extra?.eas?.projectId;
+        const projectId =
+          Constants.expoConfig?.extra?.eas?.projectId;
 
         if (!projectId) {
           throw new Error("Expo project ID not found.");
         }
 
-        const tokenResponse = await Notifications.getExpoPushTokenAsync({
-          projectId,
-        });
+        /*
+         * Get the first Expo push token.
+         */
+        const tokenResponse =
+          await Notifications.getExpoPushTokenAsync({
+            projectId,
+          });
 
         const token = tokenResponse.data;
 
         /*
-         * Double-check in case another async operation
-         * created the ID while we were waiting.
+         * Check storage again in case another async operation
+         * created the user while we were waiting.
          */
-        const latestStoredUserId = await AsyncStorage.getItem(USER_ID_KEY);
+        const latestStoredUserId =
+          await AsyncStorage.getItem(USER_ID_KEY);
 
         if (latestStoredUserId) {
           reduxUserIdRef.current = latestStoredUserId;
@@ -187,8 +225,15 @@ const useNotifications = () => {
           return latestStoredUserId;
         }
 
+        /*
+         * Create a permanent app/device user ID.
+         */
         const newUserId = generateGUID();
 
+        /*
+         * IMPORTANT:
+         * ConnectToApi should UPSERT the token for this userId.
+         */
         const response = await ConnectToApi(
           newUserId,
           token,
@@ -196,37 +241,56 @@ const useNotifications = () => {
           Constants.deviceName || "",
         );
 
-        const responseAppSettings = await createUserAppSettings(newUserId);
-
         if (!response?.success) {
-          throw new Error("Unable to register push token.");
+          throw new Error(
+            "Unable to register push token.",
+          );
         }
+
+        /*
+         * Create default settings ONLY for a brand-new user.
+         */
+        const responseAppSettings =
+          await createUserAppSettings(newUserId);
 
         if (responseAppSettings?.success) {
           dispatch(
             setNotificationsEnabled(
-              responseAppSettings?.data?.playNotifications,
+              responseAppSettings.data?.playNotifications,
             ),
           );
-          dispatch(setSoundEnabled(responseAppSettings?.data?.playAlarmSound));
-          dispatch(setVolume(responseAppSettings?.data?.appVolume));
+
+          dispatch(
+            setSoundEnabled(
+              responseAppSettings.data?.playAlarmSound,
+            ),
+          );
+
+          dispatch(
+            setVolume(
+              responseAppSettings.data?.appVolume,
+            ),
+          );
         }
 
         /*
-         * Persist first.
+         * Persist userId.
          */
-        await AsyncStorage.setItem(USER_ID_KEY, newUserId);
+        await AsyncStorage.setItem(
+          USER_ID_KEY,
+          newUserId,
+        );
 
-        /*
-         * Then update memory/Redux.
-         */
         reduxUserIdRef.current = newUserId;
 
         dispatch(setUserId(newUserId));
 
         return newUserId;
       } catch (error) {
-        console.error("Get/create user ID error:", error);
+        console.error(
+          "Get/create user ID error:",
+          error,
+        );
 
         return null;
       } finally {
@@ -240,62 +304,166 @@ const useNotifications = () => {
   }, [dispatch, requestPermissions]);
 
   /*
-   * Register push token.
+   * ---------------------------------------------------------
+   * SYNC CURRENT PUSH TOKEN
+   * ---------------------------------------------------------
    *
-   * This now uses the same user-ID mechanism as alarms.
+   * This is the important part.
+   *
+   * Every time the app initializes:
+   *
+   *     existing userId
+   *          +
+   *     current Expo token
+   *          ↓
+   *       backend
+   *
+   * If the token changed, backend gets the new token.
+   *
+   * If it didn't change, backend simply receives the same
+   * token again.
    */
-  const registerPushToken = useCallback(async () => {
-    try {
-      if (Platform.OS === "web") {
-        return null;
-      }
-
-      const userId = await getOrCreateUserId();
-
-      if (!userId) {
-        return null;
-      }
-
-      const projectId = Constants.expoConfig?.extra?.eas?.projectId;
-
-      if (!projectId) {
-        throw new Error("Expo project ID not found.");
-      }
-
-      const tokenResponse = await Notifications.getExpoPushTokenAsync({
-        projectId,
-      });
-
-      return tokenResponse.data;
-    } catch (error) {
-      console.error("Push token registration error:", error);
-
-      return null;
+  const syncPushToken = useCallback(async () => {
+    /*
+     * Prevent multiple simultaneous token registrations.
+     */
+    if (tokenSyncPromiseRef.current) {
+      return tokenSyncPromiseRef.current;
     }
-  }, [getOrCreateUserId]);
 
+    const promise = (async () => {
+      try {
+        if (Platform.OS === "web") {
+          return null;
+        }
+
+        /*
+         * Make sure we have a persistent userId.
+         */
+        const userId = await getOrCreateUserId();
+
+        if (!userId) {
+          return null;
+        }
+
+        /*
+         * Get current notification permission.
+         */
+        const granted = await requestPermissions();
+
+        if (!granted) {
+          /*
+           * Do NOT delete the userId.
+           *
+           * The user may enable notifications later.
+           */
+          return null;
+        }
+
+        const projectId =
+          Constants.expoConfig?.extra?.eas?.projectId;
+
+        if (!projectId) {
+          throw new Error(
+            "Expo project ID not found.",
+          );
+        }
+
+        /*
+         * Always ask Expo for the current token.
+         *
+         * Do not rely on an old token stored locally.
+         */
+        const tokenResponse =
+          await Notifications.getExpoPushTokenAsync({
+            projectId,
+          });
+
+        const token = tokenResponse.data;
+
+        if (!token) {
+          return null;
+        }
+
+        /*
+         * IMPORTANT:
+         *
+         * This must UPDATE/UPSERT the existing user.
+         *
+         * It must NOT create another userId.
+         */
+        const response = await ConnectToApi(
+          userId,
+          token,
+          Platform.OS,
+          Constants.deviceName || "",
+        );
+
+        if (!response?.success) {
+          throw new Error(
+            "Unable to synchronize push token.",
+          );
+        }
+
+        return token;
+      } catch (error) {
+        /*
+         * Network failures should NOT destroy the user's
+         * userId or local state.
+         *
+         * The next app launch will try again.
+         */
+        console.error(
+          "Push token synchronization error:",
+          error,
+        );
+
+        return null;
+      } finally {
+        tokenSyncPromiseRef.current = null;
+      }
+    })();
+
+    tokenSyncPromiseRef.current = promise;
+
+    return promise;
+  }, [getOrCreateUserId, requestPermissions]);
+
+  /*
+   * ---------------------------------------------------------
+   * INITIALIZE CHANNELS
+   * ---------------------------------------------------------
+   */
   const initializeChannels = useCallback(async () => {
     if (Platform.OS !== "android") {
       return;
     }
 
-    await Notifications.setNotificationChannelAsync(CHANNEL_ALARM_1, {
-      name: "Price Alerts - Alarm 1",
-      importance: Notifications.AndroidImportance.MAX,
-      sound: "alarm1",
-      vibrationPattern: [0, 250, 250, 250],
-      enableVibrate: true,
-      lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
-    });
+    await Notifications.setNotificationChannelAsync(
+      CHANNEL_ALARM_1,
+      {
+        name: "Price Alerts - Alarm 1",
+        importance: Notifications.AndroidImportance.MAX,
+        sound: "alarm1",
+        vibrationPattern: [0, 250, 250, 250],
+        enableVibrate: true,
+        lockscreenVisibility:
+          Notifications.AndroidNotificationVisibility.PUBLIC,
+      },
+    );
 
-    await Notifications.setNotificationChannelAsync(CHANNEL_ALARM_2, {
-      name: "Price Alerts - Alarm 2",
-      importance: Notifications.AndroidImportance.MAX,
-      sound: "alarm2",
-      vibrationPattern: [0, 250, 250, 250],
-      enableVibrate: true,
-      lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
-    });
+    await Notifications.setNotificationChannelAsync(
+      CHANNEL_ALARM_2,
+      {
+        name: "Price Alerts - Alarm 2",
+        importance: Notifications.AndroidImportance.MAX,
+        sound: "alarm2",
+        vibrationPattern: [0, 250, 250, 250],
+        enableVibrate: true,
+        lockscreenVisibility:
+          Notifications.AndroidNotificationVisibility.PUBLIC,
+      },
+    );
 
     const availableChannels =
       await Notifications.getNotificationChannelsAsync();
@@ -303,6 +471,11 @@ const useNotifications = () => {
     setChannels(availableChannels);
   }, []);
 
+  /*
+   * ---------------------------------------------------------
+   * INITIALIZATION
+   * ---------------------------------------------------------
+   */
   useEffect(() => {
     let mounted = true;
 
@@ -310,17 +483,25 @@ const useNotifications = () => {
       try {
         await initializeChannels();
 
-        const granted = await requestPermissions();
-
-        if (mounted) {
-          setPermissionGranted(granted);
-        }
-
-        if (granted) {
-          await registerPushToken();
-        }
+        /*
+         * This handles:
+         *
+         * - first installation
+         * - normal app launch
+         * - App Store update
+         * - TestFlight update
+         * - token changes
+         * - permission restored
+         * - temporary network failure
+         *
+         * Existing userId stays unchanged.
+         */
+        await syncPushToken();
       } catch (error) {
-        console.error("Notification initialization error:", error);
+        console.error(
+          "Notification initialization error:",
+          error,
+        );
       } finally {
         if (mounted) {
           setLoading(false);
@@ -330,31 +511,36 @@ const useNotifications = () => {
 
     initialize();
 
-    const notificationListener = Notifications.addNotificationReceivedListener(
-      (receivedNotification) => {
-        // console.log(
-        //   "Notification:",
-        //   JSON.stringify(receivedNotification, null, 2),
-        // );
+    /*
+     * Notification received while app is running.
+     */
+    const notificationListener =
+      Notifications.addNotificationReceivedListener(
+        (receivedNotification) => {
+          const data =
+            receivedNotification.request.content.data;
 
-        const data = receivedNotification.request.content.data;
+          const alarms = data?.alarms;
 
-        const alarms = data?.alarms;
+          if (Array.isArray(alarms)) {
+            dispatch(setAlarms(alarms));
+          }
 
-        if (Array.isArray(alarms)) {
-          dispatch(setAlarms(alarms));
-        }
+          if (mounted) {
+            setNotification(receivedNotification);
+          }
+        },
+      );
 
-        if (mounted) {
-          setNotification(receivedNotification);
-        }
-      },
-    );
-
+    /*
+     * User taps notification.
+     */
     const responseListener =
-      Notifications.addNotificationResponseReceivedListener(() => {
-        // Handle notification response if required.
-      });
+      Notifications.addNotificationResponseReceivedListener(
+        () => {
+          // Handle notification response if required.
+        },
+      );
 
     return () => {
       mounted = false;
@@ -362,8 +548,17 @@ const useNotifications = () => {
       notificationListener.remove();
       responseListener.remove();
     };
-  }, [initializeChannels, requestPermissions, registerPushToken]);
+  }, [
+    dispatch,
+    initializeChannels,
+    syncPushToken,
+  ]);
 
+  /*
+   * ---------------------------------------------------------
+   * ENSURE PERMISSION
+   * ---------------------------------------------------------
+   */
   const ensurePermission = useCallback(async () => {
     if (permissionGranted) {
       return true;
@@ -372,12 +567,30 @@ const useNotifications = () => {
     const granted = await requestPermissions();
 
     if (!granted) {
-      throw new Error("Notification permission was not granted.");
+      throw new Error(
+        "Notification permission was not granted.",
+      );
     }
 
-    return true;
-  }, [permissionGranted, requestPermissions]);
+    /*
+     * Permission may have just been restored.
+     *
+     * Make sure backend has the current token.
+     */
+    await syncPushToken();
 
+    return true;
+  }, [
+    permissionGranted,
+    requestPermissions,
+    syncPushToken,
+  ]);
+
+  /*
+   * ---------------------------------------------------------
+   * SEND IMMEDIATELY
+   * ---------------------------------------------------------
+   */
   const sendNotification = useCallback(
     async ({
       title,
@@ -407,6 +620,11 @@ const useNotifications = () => {
     [ensurePermission],
   );
 
+  /*
+   * ---------------------------------------------------------
+   * SCHEDULE
+   * ---------------------------------------------------------
+   */
   const scheduleNotification = useCallback(
     async ({
       title,
@@ -432,7 +650,9 @@ const useNotifications = () => {
         },
 
         trigger: {
-          type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+          type:
+            Notifications.SchedulableTriggerInputTypes
+              .TIME_INTERVAL,
           seconds: Math.max(1, seconds),
           repeats: false,
         },
@@ -441,27 +661,53 @@ const useNotifications = () => {
     [ensurePermission],
   );
 
-  const cancelNotification = useCallback(async (notificationId: string) => {
-    await Notifications.cancelScheduledNotificationAsync(notificationId);
-  }, []);
+  /*
+   * ---------------------------------------------------------
+   * CANCEL
+   * ---------------------------------------------------------
+   */
+  const cancelNotification = useCallback(
+    async (notificationId: string) => {
+      await Notifications.cancelScheduledNotificationAsync(
+        notificationId,
+      );
+    },
+    [],
+  );
 
-  const cancelAllNotifications = useCallback(async () => {
-    await Notifications.cancelAllScheduledNotificationsAsync();
-  }, []);
+  const cancelAllNotifications = useCallback(
+    async () => {
+      await Notifications.cancelAllScheduledNotificationsAsync();
+    },
+    [],
+  );
 
-  const getScheduledNotifications = useCallback(async () => {
-    return Notifications.getAllScheduledNotificationsAsync();
-  }, []);
+  const getScheduledNotifications = useCallback(
+    async () => {
+      return Notifications.getAllScheduledNotificationsAsync();
+    },
+    [],
+  );
 
   return {
     channels,
     notification,
     loading,
     permissionGranted,
+
     requestPermissions,
+
     getOrCreateUserId,
+
+    /*
+     * Expose this if you ever want to manually force a
+     * token synchronization after login/settings changes.
+     */
+    syncPushToken,
+
     sendNotification,
     scheduleNotification,
+
     cancelNotification,
     cancelAllNotifications,
     getScheduledNotifications,
