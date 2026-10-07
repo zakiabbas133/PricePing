@@ -3,10 +3,8 @@ import { useDispatch } from "react-redux";
 import {
   setAlarms,
   setNotificationsEnabled,
-  setSelectedSound,
   setSoundEnabled,
 } from "../store/appSlice";
-import { SoundItem } from "../screens/AlarmSounds";
 import useNotifications from "./useNotifications";
 import createAlarmOnBackend from "../api/createAlarm";
 import deleteAlarmFromDb from "../api/deleteAalrm";
@@ -24,7 +22,7 @@ export type PriceAlarm = {
   direction: AlarmDirection;
   triggered: boolean;
   triggeredPrice?: number;
-  triggeredAt?: string;
+  triggeredAt: string;
   createdAt: string;
   futureOrSpot: string;
   initialPrice?: number;
@@ -36,7 +34,7 @@ export type PriceAlarmWidthoutId = {
   direction: AlarmDirection;
   triggered: boolean;
   triggeredPrice?: number;
-  triggeredAt?: string;
+  triggeredAt: string;
   createdAt: string;
   futureOrSpot: string;
   initialPrice?: number;
@@ -45,11 +43,12 @@ export type PriceAlarmWidthoutId = {
 const useGeneratePrice = (initialCurreny = "BTCUSDT") => {
   const dispatch = useDispatch();
 
-  const { permissionGranted, requestPermissions, getOrCreateUserId } =
+  const { permissionGranted, requestPermissions, getPushToken } =
     useNotifications();
 
   const [status, setStatus] = useState("");
   const [price, setPrice] = useState(0);
+  const [change24h, setChange24h] = useState<number | null>(null);
 
   const symbolRef = useRef(initialCurreny);
   const socketRef = useRef<WebSocket | null>(null);
@@ -68,6 +67,9 @@ const useGeneratePrice = (initialCurreny = "BTCUSDT") => {
 
   const alarmLastPriceRef = useRef<Map<number, number>>(new Map());
 
+  /**
+   * Enable/disable alarm sound.
+   */
   const setAlarmSoundNotification = useCallback(
     (enabled: boolean) => {
       if (!permissionGranted) {
@@ -79,6 +81,40 @@ const useGeneratePrice = (initialCurreny = "BTCUSDT") => {
     [dispatch, permissionGranted, requestPermissions],
   );
 
+  const get24HourChange = useCallback(async (symbol: string) => {
+    try {
+      const normalizedSymbol = symbol.trim().toUpperCase();
+
+      const response = await fetch(
+        `https://fapi.binance.com/fapi/v1/ticker/24hr?symbol=${normalizedSymbol}`,
+      );
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch 24h change: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      const percentChange = Number(data.priceChangePercent);
+
+      if (!Number.isFinite(percentChange)) {
+        setChange24h(null);
+        return null;
+      }
+
+      setChange24h(percentChange);
+
+      return percentChange;
+    } catch (error) {
+      console.error("Binance 24h change error:", error);
+      setChange24h(null);
+      return null;
+    }
+  }, []);
+
+  /**
+   * Enable/disable push notifications.
+   */
   const setNotificationSoundNotification = useCallback(
     (enabled: boolean) => {
       if (!permissionGranted) {
@@ -90,23 +126,16 @@ const useGeneratePrice = (initialCurreny = "BTCUSDT") => {
     [dispatch, permissionGranted, requestPermissions],
   );
 
-  const setAlarmSound = useCallback(
-    (sound: SoundItem) => {
-      dispatch(
-        setSelectedSound({
-          id: sound.id,
-          soundName: sound.description,
-          fileName: sound.id,
-          fileFullName: `${sound.id}.mp3`,
-        }),
-      );
-    },
-    [dispatch],
-  );
-
+  /**
+   * Delete alarm.
+   *
+   * The backend already knows the alarm by its ID,
+   * so no userId/token is required here.
+   */
   const deleteAlarm = useCallback(
     async (alarmId: number) => {
       const res = await deleteAlarmFromDb(alarmId);
+
       if (res.success) {
         dispatch(setAlarms(res.data));
       }
@@ -114,98 +143,113 @@ const useGeneratePrice = (initialCurreny = "BTCUSDT") => {
     [dispatch],
   );
 
-  const getPriceBasedOnCurrency = useCallback((nextSymbol: string) => {
-    const normalizedSymbol = nextSymbol.trim().toUpperCase();
+  /**
+   * Connect to Binance Futures WebSocket.
+   */
+  const getPriceBasedOnCurrency = useCallback(
+    (nextSymbol: string) => {
+      const normalizedSymbol = nextSymbol.trim().toUpperCase();
 
-    if (!normalizedSymbol) {
-      return;
-    }
-
-    symbolRef.current = normalizedSymbol;
-
-    if (socketRef.current) {
-      socketRef.current.close();
-      socketRef.current = null;
-    }
-
-    if (reconnectTimeoutRef.current) {
-      clearTimeout(reconnectTimeoutRef.current);
-
-      reconnectTimeoutRef.current = undefined;
-    }
-
-    reconnectAttemptsRef.current = 0;
-    priceRef.current = null;
-
-    const connect = () => {
-      if (!mountedRef.current) {
+      if (!normalizedSymbol) {
         return;
       }
 
-      setStatus("connecting");
+      symbolRef.current = normalizedSymbol;
 
-      const streamSymbol = symbolRef.current.toLowerCase();
+      setChange24h(null);
+      get24HourChange(normalizedSymbol);
 
-      const ws = new WebSocket(
-        `wss://fstream.binance.com/ws/${streamSymbol}@trade`,
-      );
+      if (socketRef.current) {
+        socketRef.current.close();
+        socketRef.current = null;
+      }
 
-      socketRef.current = ws;
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
 
-      ws.onopen = () => {
+        reconnectTimeoutRef.current = undefined;
+      }
+
+      reconnectAttemptsRef.current = 0;
+      priceRef.current = null;
+
+      const connect = () => {
         if (!mountedRef.current) {
           return;
         }
 
-        reconnectAttemptsRef.current = 0;
+        setStatus("connecting");
 
-        setStatus("connected");
-      };
+        const streamSymbol = symbolRef.current.toLowerCase();
 
-      ws.onmessage = (event) => {
-        try {
-          const trade: BinanceTrade = JSON.parse(event.data);
+        const ws = new WebSocket(
+          `wss://fstream.binance.com/ws/${streamSymbol}@trade`,
+        );
 
-          const currentPrice = Number(trade.p);
+        socketRef.current = ws;
 
-          if (!Number.isFinite(currentPrice) || currentPrice === 0) {
-            return;
-          }
-
+        ws.onopen = () => {
           if (!mountedRef.current) {
             return;
           }
 
-          priceRef.current = currentPrice;
+          reconnectAttemptsRef.current = 0;
 
-          setPrice(currentPrice);
-        } catch (error) {
-          console.error("Binance WebSocket parse error:", error);
-        }
+          setStatus("connected");
+        };
+
+        ws.onmessage = (event) => {
+          try {
+            const trade: BinanceTrade = JSON.parse(event.data);
+
+            const currentPrice = Number(trade.p);
+
+            if (!Number.isFinite(currentPrice) || currentPrice === 0) {
+              return;
+            }
+
+            if (!mountedRef.current) {
+              return;
+            }
+
+            priceRef.current = currentPrice;
+
+            setPrice(currentPrice);
+          } catch (error) {
+            console.error("Binance WebSocket parse error:", error);
+          }
+        };
+
+        ws.onerror = (error) => {
+          console.error("Binance WebSocket error:", error);
+        };
+
+        ws.onclose = () => {
+          if (!mountedRef.current) {
+            return;
+          }
+
+          setStatus("disconnected");
+
+          const attempt = reconnectAttemptsRef.current++;
+
+          const delay = Math.min(1000 * Math.pow(2, attempt), 30000);
+
+          reconnectTimeoutRef.current = setTimeout(connect, delay);
+        };
       };
 
-      ws.onerror = (error) => {
-        console.error("Binance WebSocket error:", error);
-      };
+      connect();
+    },
+    [get24HourChange],
+  );
 
-      ws.onclose = () => {
-        if (!mountedRef.current) {
-          return;
-        }
-
-        setStatus("disconnected");
-
-        const attempt = reconnectAttemptsRef.current++;
-
-        const delay = Math.min(1000 * Math.pow(2, attempt), 30000);
-
-        reconnectTimeoutRef.current = setTimeout(connect, delay);
-      };
-    };
-
-    connect();
-  }, []);
-
+  /**
+   * Create a price alarm.
+   *
+   * The Expo push token is now the ONLY identity
+   * sent to the backend.
+   */
   const createAlarm = useCallback(
     async (
       alarmSymbol: string,
@@ -229,18 +273,16 @@ const useGeneratePrice = (initialCurreny = "BTCUSDT") => {
         throw new Error("Invalid alarm direction.");
       }
 
-      /*
-       * THIS IS THE IMPORTANT FIX.
-       *
-       * The alarm creation waits until the persistent
-       * user ID actually exists.
-       */
-      const userId = await getOrCreateUserId();
+      const pushToken = await getPushToken();
 
-      if (!userId) {
-        throw new Error("Unable to obtain device user ID.");
+      if (!pushToken) {
+        throw new Error("Unable to obtain Expo push token.");
       }
 
+      /**
+       * Get the current price only when this is
+       * the currently connected symbol.
+       */
       const currentPrice =
         normalizedSymbol === symbolRef.current ? priceRef.current : null;
 
@@ -250,6 +292,7 @@ const useGeneratePrice = (initialCurreny = "BTCUSDT") => {
           : undefined;
 
       const createdAt = new Date().toISOString();
+      const triggeredAt = new Date().toISOString();
 
       const newAlarm: PriceAlarm = {
         id: nextIdRef.current++,
@@ -257,6 +300,7 @@ const useGeneratePrice = (initialCurreny = "BTCUSDT") => {
         targetPrice: normalizedTarget,
         direction: direction as AlarmDirection,
         triggered: false,
+        triggeredAt,
         createdAt,
         futureOrSpot,
         initialPrice,
@@ -267,34 +311,52 @@ const useGeneratePrice = (initialCurreny = "BTCUSDT") => {
         targetPrice: normalizedTarget,
         direction: direction as AlarmDirection,
         triggered: false,
+        triggeredAt,
         createdAt,
         futureOrSpot,
         initialPrice,
       };
 
-      /*
-       * Now userId is guaranteed to exist.
+      /**
+       * Send the alarm using the push token.
+       *
+       * Before:
+       * createAlarmOnBackend(alarmToSend, userId)
+       *
+       * Now:
+       * createAlarmOnBackend(alarmToSend, pushToken)
        */
-      const res = await createAlarmOnBackend(alarmToSend, userId);
+      const res = await createAlarmOnBackend(alarmToSend, pushToken);
+
       if (res.success) {
         dispatch(setAlarms(res.data));
       }
 
+      /**
+       * Keep track of the initial price locally.
+       */
       if (initialPrice !== undefined) {
         alarmLastPriceRef.current.set(newAlarm.id, initialPrice);
       } else {
         alarmLastPriceRef.current.delete(newAlarm.id);
       }
 
+      /**
+       * If the alarm was created for another symbol,
+       * switch the Binance WebSocket.
+       */
       if (normalizedSymbol !== symbolRef.current) {
         getPriceBasedOnCurrency(normalizedSymbol);
       }
 
       return newAlarm;
     },
-    [dispatch, getOrCreateUserId, getPriceBasedOnCurrency],
+    [dispatch, getPushToken, getPriceBasedOnCurrency],
   );
 
+  /**
+   * Initialize Binance WebSocket.
+   */
   useEffect(() => {
     mountedRef.current = true;
 
@@ -305,6 +367,8 @@ const useGeneratePrice = (initialCurreny = "BTCUSDT") => {
 
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current);
+
+        reconnectTimeoutRef.current = undefined;
       }
 
       if (socketRef.current) {
@@ -317,11 +381,11 @@ const useGeneratePrice = (initialCurreny = "BTCUSDT") => {
   return {
     status,
     price,
+    change24h,
     permissionGranted,
     requestPermissions,
     createAlarm,
     deleteAlarm,
-    setAlarmSound,
     setAlarmSoundNotification,
     setNotificationSoundNotification,
   };

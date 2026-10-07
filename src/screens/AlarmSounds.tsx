@@ -7,21 +7,20 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { Ionicons, SimpleLineIcons } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useDispatch, useSelector } from "react-redux";
+import { ModalContent, ModalType } from "./Home";
+import { setSelectedSound } from "../store/appSlice";
+import { updateAlarmSoundOnDb } from "../api/appSettings";
 import {
   setAudioModeAsync,
   useAudioPlayer,
   useAudioPlayerStatus,
 } from "expo-audio";
-import { Ionicons, SimpleLineIcons } from "@expo/vector-icons";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch, RootState } from "../store/store";
-import { setSelectedSound } from "../store/appSlice";
-import { updateAlarmSoundOnDb } from "../api/appSettings";
-import useNotifications from "../hooks/useNotifications";
 import CustomApiLoader from "../components/CustomApiLoader";
 import CustomModal from "../components/CustomModal";
-import { ModalContent, ModalType } from "./Home";
 
 export type SoundItem = {
   id: string;
@@ -34,21 +33,62 @@ const SOUNDS: SoundItem[] = [
   {
     id: "alarm1",
     name: "Alarm 1",
-    description: "Classic alarm tone",
+    description: "Classic wake up tone",
     source: require("../../assets/sounds/alarm1.mp3"),
   },
   {
     id: "alarm2",
     name: "Alarm 2",
-    description: "Gentle alert",
+    description: "Soft gentle morning alert",
     source: require("../../assets/sounds/alarm2.mp3"),
+  },
+  {
+    id: "alarm3",
+    name: "Alarm 3",
+    description: "Bright energetic alert tone",
+    source: require("../../assets/sounds/alarm3.mp3"),
+  },
+  {
+    id: "alarm4",
+    name: "Alarm 4",
+    description: "Calm bedside wake up",
+    source: require("../../assets/sounds/bedside.mp3"),
+  },
+  {
+    id: "alarm5",
+    name: "Alarm 5",
+    description: "Dreamy ambient alert tone",
+    source: require("../../assets/sounds/dreamcore.mp3"),
+  },
+  {
+    id: "alarm6",
+    name: "Alarm 6",
+    description: "Peaceful dreamy notification tone",
+    source: require("../../assets/sounds/dreammemory.mp3"),
+  },
+  {
+    id: "alarm7",
+    name: "Alarm 7",
+    description: "Cheerful uplifting morning tone",
+    source: require("../../assets/sounds/morningjoy.mp3"),
+  },
+  {
+    id: "alarm8",
+    name: "Alarm 8",
+    description: "Simple playful alert tone",
+    source: require("../../assets/sounds/oversimplified.mp3"),
+  },
+  {
+    id: "alarm9",
+    name: "Alarm 9",
+    description: "Elegant piano clock chime",
+    source: require("../../assets/sounds/pianoclock.mp3"),
   },
 ];
 
 const AlarmSounds = ({ navigation }: any) => {
   const insets = useSafeAreaInsets();
-  const { getOrCreateUserId } = useNotifications();
-  const userId = getOrCreateUserId();
+  const userId = useSelector((state: RootState) => state.app.userId);
   const dispatch = useDispatch<AppDispatch>();
   const selectedSound = useSelector(
     (state: RootState) => state.app.selectedSound,
@@ -327,6 +367,7 @@ const AlarmSounds = ({ navigation }: any) => {
           alignItems: "center",
           justifyContent: "center",
           borderRadius: 10,
+          marginTop: 10,
         }}
       >
         <Text style={styles.primaryButtonText}>Set Alarm Sound</Text>

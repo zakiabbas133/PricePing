@@ -1,11 +1,40 @@
-import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import {
+  Image,
+  Platform,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { AntDesign, Ionicons } from "@expo/vector-icons";
 import { PriceAlarm } from "../hooks/useGeneratePrice";
 import { useState } from "react";
 import { ModalContent, ModalType } from "../screens/Home";
-import CustomModal from "./CustomModal";
 import CustomDeleteModal from "./CustomDeleteModal";
-import CustomApiLoader from "./CustomApiLoader";
+
+export const coinImages: Record<string, any> = {
+  BTCUSDT: require("../../assets/coins/bitcoin.png"),
+  ETHUSDT: require("../../assets/coins/ethereum.png"),
+  BNBUSDT: require("../../assets/coins/bnb.png"),
+  SOLUSDT: require("../../assets/coins/solana.jpg"),
+  XRPUSDT: require("../../assets/coins/xrp.png"),
+  ADAUSDT: require("../../assets/coins/cardano.png"),
+  DOGEUSDT: require("../../assets/coins/dogecoin.png"),
+  AVAXUSDT: require("../../assets/coins/avalanche.png"),
+  LINKUSDT: require("../../assets/coins/chainlink.png"),
+  DOTUSDT: require("../../assets/coins/polkadot.png"),
+  TRXUSDT: require("../../assets/coins/tron.png"),
+  LTCUSDT: require("../../assets/coins/litecoin.png"),
+  BCHUSDT: require("../../assets/coins/bitcoin-cash.png"),
+  UNIUSDT: require("../../assets/coins/uniswap.png"),
+  ATOMUSDT: require("../../assets/coins/cosmos.png"),
+  ETCUSDT: require("../../assets/coins/ethereum-classic.png"),
+  FILUSDT: require("../../assets/coins/filecoin.png"),
+  APTUSDT: require("../../assets/coins/aptos.png"),
+  ARBUSDT: require("../../assets/coins/arbitrum.png"),
+  OPUSDT: require("../../assets/coins/optimism.png"),
+  SUIUSDT: require("../../assets/coins/sui.png"),
+};
 
 const RenderAlarm = ({
   alarm,
@@ -15,17 +44,11 @@ const RenderAlarm = ({
   deleteAlarm: (id: number) => void;
 }) => {
   const [modalVisible, setModalVisible] = useState(false);
-  const [loadingApi, setLoadingApi] = useState(false);
   const [modalContent, setModalContent] = useState<ModalContent>({
     title: "",
     description: "",
     type: "warn",
   });
-  const coinImages: Record<string, any> = {
-    BTCUSDT: require("../../assets/coins/bitcoin.png"),
-    ETHUSDT: require("../../assets/coins/ethereum.png"),
-    SOLUSDT: require("../../assets/coins/salana.jpg"),
-  };
 
   const showModal = (
     title: string,
@@ -250,7 +273,7 @@ const RenderAlarm = ({
               style={{
                 color: "#000000",
                 fontFamily: "Outfit-SemiBold",
-                fontSize: 18,
+                fontSize: Platform.OS == "ios" ? 18 : 17,
               }}
             >
               {formatPrice(alarm.initialPrice ?? null)}
@@ -298,7 +321,7 @@ const RenderAlarm = ({
               style={{
                 color: "#000000",
                 fontFamily: "Outfit-SemiBold",
-                fontSize: 18,
+                fontSize: Platform.OS == "ios" ? 18 : 17,
                 maxWidth: "75%",
               }}
             >
@@ -351,7 +374,6 @@ const RenderAlarm = ({
             {formatDateTime(alarm.createdAt)}
           </Text>
         </View>
-        {/* <TouchableOpacity onPress={() => deleteAlarm(alarm.id)}> */}
         <TouchableOpacity onPress={openDeleteAlarmModal}>
           <Ionicons name="trash-outline" size={24} color="#B42318" />
         </TouchableOpacity>
@@ -360,16 +382,13 @@ const RenderAlarm = ({
       <CustomDeleteModal
         visible={modalVisible}
         onConfirm={async () => {
-          setLoadingApi(true);
+          setModalVisible(false);
           await deleteAlarm(alarm.id);
-          setLoadingApi(false);
         }}
         onCancel={() => setModalVisible(false)}
         title={modalContent.title}
         message={modalContent.description}
       />
-
-      {loadingApi && <CustomApiLoader />}
     </View>
   );
 };

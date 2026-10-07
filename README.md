@@ -78,8 +78,7 @@ The exact structure may evolve as the project grows, but the application is orga
 PricePing/
 ├── assets/
 │   └── sounds/
-│       ├── alarm1.mp3
-│       └── alarm2.mp3
+│       └── alarms audios
 │
 ├── hooks/
 │   ├── useBinanceBTCPrice.*
@@ -611,7 +610,17 @@ Example:
 [
   "expo-notifications",
   {
-    "sounds": ["./assets/sounds/alarm1.mp3", "./assets/sounds/alarm2.mp3"]
+    "sounds": [
+      "./assets/sounds/alarm1.mp3",
+      "./assets/sounds/alarm2.mp3",
+      "./assets/sounds/alarm3.mp3",
+      "./assets/sounds/bedside.mp3",
+      "./assets/sounds/dreamcore.mp3",
+      "./assets/sounds/dreammemory.mp3",
+      "./assets/sounds/morningjoy.mp3",
+      "./assets/sounds/oversimplified.mp3",
+      "./assets/sounds/pianoclock.mp3"
+    ]
   }
 ]
 ```

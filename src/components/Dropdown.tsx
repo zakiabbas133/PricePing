@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Image, Platform, StyleSheet, Text, View } from "react-native";
 import { Dropdown } from "react-native-element-dropdown";
 
-const data = [
+export const data = [
   {
     label: "BTCUSDT",
     value: "BTCUSDT",
@@ -14,9 +14,99 @@ const data = [
     image: require("../../assets/coins/ethereum.png"),
   },
   {
+    label: "BNBUSDT",
+    value: "BNBUSDT",
+    image: require("../../assets/coins/bnb.png"),
+  },
+  {
     label: "SOLUSDT",
     value: "SOLUSDT",
-    image: require("../../assets/coins/salana.jpg"),
+    image: require("../../assets/coins/solana.jpg"),
+  },
+  {
+    label: "XRPUSDT",
+    value: "XRPUSDT",
+    image: require("../../assets/coins/xrp.png"),
+  },
+  {
+    label: "ADAUSDT",
+    value: "ADAUSDT",
+    image: require("../../assets/coins/cardano.png"),
+  },
+  {
+    label: "DOGEUSDT",
+    value: "DOGEUSDT",
+    image: require("../../assets/coins/dogecoin.png"),
+  },
+  {
+    label: "AVAXUSDT",
+    value: "AVAXUSDT",
+    image: require("../../assets/coins/avalanche.png"),
+  },
+  {
+    label: "LINKUSDT",
+    value: "LINKUSDT",
+    image: require("../../assets/coins/chainlink.png"),
+  },
+  {
+    label: "DOTUSDT",
+    value: "DOTUSDT",
+    image: require("../../assets/coins/polkadot.png"),
+  },
+  {
+    label: "TRXUSDT",
+    value: "TRXUSDT",
+    image: require("../../assets/coins/tron.png"),
+  },
+  {
+    label: "LTCUSDT",
+    value: "LTCUSDT",
+    image: require("../../assets/coins/litecoin.png"),
+  },
+  {
+    label: "BCHUSDT",
+    value: "BCHUSDT",
+    image: require("../../assets/coins/bitcoin-cash.png"),
+  },
+  {
+    label: "UNIUSDT",
+    value: "UNIUSDT",
+    image: require("../../assets/coins/uniswap.png"),
+  },
+  {
+    label: "ATOMUSDT",
+    value: "ATOMUSDT",
+    image: require("../../assets/coins/cosmos.png"),
+  },
+  {
+    label: "ETCUSDT",
+    value: "ETCUSDT",
+    image: require("../../assets/coins/ethereum-classic.png"),
+  },
+  {
+    label: "FILUSDT",
+    value: "FILUSDT",
+    image: require("../../assets/coins/filecoin.png"),
+  },
+  {
+    label: "APTUSDT",
+    value: "APTUSDT",
+    image: require("../../assets/coins/aptos.png"),
+  },
+  {
+    label: "ARBUSDT",
+    value: "ARBUSDT",
+    image: require("../../assets/coins/arbitrum.png"),
+  },
+  {
+    label: "OPUSDT",
+    value: "OPUSDT",
+    image: require("../../assets/coins/optimism.png"),
+  },
+  {
+    label: "SUIUSDT",
+    value: "SUIUSDT",
+    image: require("../../assets/coins/sui.png"),
   },
 ];
 

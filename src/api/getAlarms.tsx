@@ -5,13 +5,16 @@ const getAlarms = async (userId: string) => {
     // const apiBaseUrl = Constants.expoConfig?.extra?.localApiBaseUrl; // LOCAL
 
     const xApiKey = Constants.expoConfig?.extra?.xApiKey;
-    const response = await fetch(`${apiBaseUrl}/api/Notifications/getAlarms?userId=${userId}`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": xApiKey ?? "",
+    const response = await fetch(
+      `${apiBaseUrl}/api/Notifications/getAlarms?userId=${userId}`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": xApiKey ?? "",
+        },
       },
-    });
+    );
     const responseText = await response.text();
 
     if (!response.ok) {

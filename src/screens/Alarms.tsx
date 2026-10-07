@@ -12,17 +12,21 @@ import { RootState } from "../store/store";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { setAlarms } from "../store/appSlice";
+import { ModalContent, ModalType } from "./Home";
+import { LinearGradient } from "expo-linear-gradient";
 import RenderAlarm from "../components/RenderAlarm";
 import useGeneratePrice from "../hooks/useGeneratePrice";
 import getAlarms from "../api/getAlarms";
-import { ModalContent, ModalType } from "./Home";
 import CustomModal from "../components/CustomModal";
+import RenderPastAlarm from "../components/RenderPastAlarm";
+import CustomApiLoader from "../components/CustomApiLoader";
 
 const Alarms = () => {
   const insets = useSafeAreaInsets();
   const dispatch = useDispatch();
   const userId = useSelector((state: RootState) => state.app.userId);
   const { deleteAlarm } = useGeneratePrice();
+  const [loadingApi, setLoadingApi] = useState(false);
   const [activeOrPast, setActiveOrPast] = useState("");
   const [refreshing, setRefreshing] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
@@ -48,6 +52,7 @@ const Alarms = () => {
   const alarmsOnBackend = async () => {
     try {
       const res = await getAlarms(userId || "");
+
       if (res.success) {
         dispatch(setAlarms(res.data));
       }
@@ -108,13 +113,16 @@ const Alarms = () => {
 
   return (
     <View style={styles.safeArea}>
+      <LinearGradient
+        colors={["rgba(255,255,255,1)", "rgba(255,255,255,0)"]}
+        style={[styles.background, { height: insets.top + 10 }]}
+      />
       <ScrollView
         contentContainerStyle={{
           flexGrow: 1,
-          paddingTop: insets.top + 20,
-          paddingBottom: 20,
+          paddingTop: insets.top + 10,
           paddingHorizontal: 20,
-          backgroundColor: "#fff",
+          paddingBottom: insets.bottom + 70,
         }}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
@@ -177,7 +185,14 @@ const Alarms = () => {
                       key={index}
                       alarm={alarm}
                       deleteAlarm={() => {
-                        deleteAlarm(alarm.id);
+                        setLoadingApi(true);
+                        deleteAlarm(alarm.id)
+                          .then(() => {
+                            setLoadingApi(false);
+                          })
+                          .finally(() => {
+                            setLoadingApi(false);
+                          });
                         showModal(
                           "Delete Alarm",
                           `Alarm deleted successfully.`,
@@ -213,11 +228,18 @@ const Alarms = () => {
               <View style={{ gap: 10 }}>
                 {pastAlarms.map((alarm, index) => {
                   return (
-                    <RenderAlarm
+                    <RenderPastAlarm
                       key={index}
                       alarm={alarm}
                       deleteAlarm={() => {
-                        deleteAlarm(alarm.id);
+                        setLoadingApi(true);
+                        deleteAlarm(alarm.id)
+                          .then(() => {
+                            setLoadingApi(false);
+                          })
+                          .finally(() => {
+                            setLoadingApi(false);
+                          });
                         showModal(
                           "Delete Alarm",
                           `Alarm deleted successfully.`,
@@ -246,6 +268,7 @@ const Alarms = () => {
           confirmText="Okay"
         />
       </ScrollView>
+      {loadingApi && <CustomApiLoader />}
     </View>
   );
 };
@@ -485,5 +508,13 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "600",
     color: "#F04438",
+  },
+
+  background: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 999,
   },
 });

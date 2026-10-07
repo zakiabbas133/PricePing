@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useState } from "react";
 import {
   Linking,
   Platform,
@@ -12,15 +12,17 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { SimpleLineIcons } from "@expo/vector-icons";
 import { useDispatch, useSelector } from "react-redux";
+import { LinearGradient } from "expo-linear-gradient";
 import { RootState } from "../store/store";
 import { setVolume } from "../store/appSlice";
+import { appVolumeChangeOnDb } from "../api/appSettings";
 import Slider from "@react-native-community/slider";
 import useGeneratePrice from "../hooks/useGeneratePrice";
 import Constants from "expo-constants";
-import useNotifications from "../hooks/useNotifications";
-import { appVolumeChangeOnDb } from "../api/appSettings";
 
 const Settings = ({ navigation }: any) => {
+  const userId = useSelector((state: RootState) => state.app.userId);
+
   const webSocketDocumentationUrl =
     "https://github.com/binance/binance-spot-api-docs/blob/master/web-socket-streams.md?utm_source=chatgpt.com#websocket-streams-for-binance";
   const {
@@ -28,8 +30,6 @@ const Settings = ({ navigation }: any) => {
     setNotificationSoundNotification,
     permissionGranted,
   } = useGeneratePrice();
-
-  const { getOrCreateUserId } = useNotifications();
 
   const selectedSound = useSelector(
     (state: RootState) => state.app.selectedSound,
@@ -40,7 +40,6 @@ const Settings = ({ navigation }: any) => {
   const dispatch = useDispatch();
   const appVolume = useSelector((state: RootState) => state.app.volume);
   const [showVolume, setShowVolume] = useState(false);
-  const volumeRef = useRef(Number(appVolume));
   const insets = useSafeAreaInsets();
 
   const openWebsocketDocumentation = () => {
@@ -48,7 +47,6 @@ const Settings = ({ navigation }: any) => {
   };
 
   const changeAppVolumeOnBackend = async (vol: number) => {
-    const userId = await getOrCreateUserId();
     const res = await appVolumeChangeOnDb(vol, userId ?? "");
     if (res?.success) {
       dispatch(setVolume(res?.data?.appVolume));
@@ -57,19 +55,19 @@ const Settings = ({ navigation }: any) => {
 
   return (
     <View style={styles.safeArea}>
+      <LinearGradient
+        colors={["rgba(255,255,255,1)", "rgba(255,255,255,0)"]}
+        style={[styles.background, { height: insets.top + 10 }]}
+      />
       <ScrollView
         contentContainerStyle={{
           flexGrow: 1,
-          paddingTop: insets.top + 20,
-          paddingBottom: 20,
+          paddingTop: insets.top + 10,
           paddingHorizontal: 20,
-          backgroundColor: "#fff",
+          paddingBottom: insets.bottom + 80,
         }}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={true}
-        // refreshControl={
-        //   <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        // }
       >
         <Text style={styles.sectionTitle}>Active Preferences</Text>
 
@@ -169,8 +167,8 @@ const Settings = ({ navigation }: any) => {
                     position: "absolute",
                     right: 0,
                     borderRadius: 99,
-                    paddingHorizontal: 5,
-                    paddingVertical: Platform.OS == 'android' ? 10 : 5,
+                    paddingHorizontal: Platform.OS == "android" ? 3 : 10,
+                    paddingVertical: Platform.OS == "android" ? 10 : 0,
                     shadowColor: "#000",
                     shadowOffset: {
                       width: 0,
@@ -221,15 +219,13 @@ const Settings = ({ navigation }: any) => {
             </View>
 
             <Switch
-              value={soundNotificationSettings.sound}
+              // trackColor={{ false: "#D0D5DD", true: "#AFC9FF" }}
+              // thumbColor={
+              //   soundNotificationSettings.sound ? "#1677FF" : "#F4F4F5"
+              // }
+              // ios_backgroundColor="#AFC9FF"
               onValueChange={setAlarmSoundNotification}
-              trackColor={{
-                false: "#D0D5DD",
-                true: "#AFC9FF",
-              }}
-              thumbColor={
-                soundNotificationSettings.sound ? "#1677FF" : "#F4F4F5"
-              }
+              value={soundNotificationSettings.sound}
             />
           </View>
 
@@ -252,15 +248,13 @@ const Settings = ({ navigation }: any) => {
             </View>
 
             <Switch
-              value={soundNotificationSettings.notifications}
+              // trackColor={{ false: "#D0D5DD", true: "#AFC9FF" }}
+              // thumbColor={
+              //   soundNotificationSettings.notifications ? "#1677FF" : "#F4F4F5"
+              // }
+              // ios_backgroundColor="#AFC9FF"
               onValueChange={setNotificationSoundNotification}
-              trackColor={{
-                false: "#D0D5DD",
-                true: "#AFC9FF",
-              }}
-              thumbColor={
-                soundNotificationSettings.notifications ? "#1677FF" : "#F4F4F5"
-              }
+              value={soundNotificationSettings.notifications}
             />
           </View>
         </View>
@@ -541,5 +535,13 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 17,
     color: "#B42318",
+  },
+
+  background: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 999,
   },
 });

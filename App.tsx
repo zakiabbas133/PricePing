@@ -42,6 +42,9 @@ export default function App() {
   return (
     <Provider store={store}>
       <PersistGate loading={null} persistor={persistor}>
+        {/* <LinearGradient colors={['#bbb7b7', '#fff']}
+          style={styles.background}
+        /> */}
         <View style={styles.container}>
           <NavigationContainer>
             <PricePingStack />
@@ -57,5 +60,15 @@ export default function App() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+
+  background: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'red',
+    height: 100,
+    zIndex: 999
   },
 });

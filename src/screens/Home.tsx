@@ -11,9 +11,9 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { LinearGradient } from "expo-linear-gradient";
 import AntDesign from "@expo/vector-icons/AntDesign";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
-
 import DropdownElement from "../components/Dropdown";
 import CustomModal from "../components/CustomModal";
 import useGeneratePrice from "../hooks/useGeneratePrice";
@@ -34,7 +34,7 @@ export type ModalContent = {
 
 const SymbolScreen = ({ symbol, setSymbol }: SymbolScreenProps) => {
   const insets = useSafeAreaInsets();
-  const { price, status, createAlarm } = useGeneratePrice(symbol);
+  const { price, change24h, status, createAlarm } = useGeneratePrice(symbol);
 
   const [targetInput, setTargetInput] = useState("");
   const [priceError, setPriceError] = useState(false);
@@ -186,15 +186,20 @@ const SymbolScreen = ({ symbol, setSymbol }: SymbolScreenProps) => {
 
   return (
     <KeyboardAvoidingView
+      keyboardVerticalOffset={insets.bottom - 50}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       style={styles.safeArea}
     >
+      <LinearGradient
+        colors={["rgba(255,255,255,1)", "rgba(255,255,255,0)"]}
+        style={[styles.background, { height: insets.top + 10 }]}
+      />
       <ScrollView
         contentContainerStyle={{
           flexGrow: 1,
-          paddingTop: insets.top + 20,
+          paddingTop: insets.top + 10,
           paddingHorizontal: 20,
-          paddingBottom: 30,
+          paddingBottom: insets.bottom + 60,
         }}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={true}
@@ -223,8 +228,11 @@ const SymbolScreen = ({ symbol, setSymbol }: SymbolScreenProps) => {
 
           {/* Spot / Futures */}
           <View style={[styles.directionContainer, { marginBottom: 12 }]}>
-            <Pressable
-              onPress={() => setFutureOrSpot("spot")}
+            {/* <Pressable
+              onPress={() => {
+                setFutureOrSpot("spot");
+                navigation.navigate("PlayAlarm");
+              }}
               style={[
                 styles.directionButton,
                 futureOrSpot === "spot" && styles.marketSelected,
@@ -238,7 +246,7 @@ const SymbolScreen = ({ symbol, setSymbol }: SymbolScreenProps) => {
               >
                 Spot
               </Text>
-            </Pressable>
+            </Pressable> */}
 
             <Pressable
               onPress={() => setFutureOrSpot("future")}
@@ -365,7 +373,23 @@ const SymbolScreen = ({ symbol, setSymbol }: SymbolScreenProps) => {
 
             {/* Replace this placeholder with a real 24-hour change value
                 if your price hook provides one. */}
-            <Text style={styles.percentageText}>+1.24%</Text>
+            <Text
+              style={[
+                styles.percentageText,
+                {
+                  color:
+                    change24h == null
+                      ? "#98A2B3"
+                      : change24h >= 0
+                        ? "#2DA076"
+                        : "#DC2626",
+                },
+              ]}
+            >
+              {change24h == null
+                ? "—"
+                : `${change24h >= 0 ? "+" : ""}${change24h.toFixed(2)}%`}
+            </Text>
           </View>
 
           <View style={styles.priceRow}>
@@ -671,5 +695,13 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: "#626770",
     fontFamily: "Outfit-SemiBold",
+  },
+
+  background: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 999,
   },
 });
