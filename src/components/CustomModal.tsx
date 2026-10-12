@@ -1,6 +1,7 @@
 import React from "react";
 import {
   Modal,
+  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -8,6 +9,7 @@ import {
   ViewStyle,
 } from "react-native";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
+import { BlurView } from "expo-blur";
 
 type CustomModalProps = {
   visible: boolean;
@@ -47,56 +49,116 @@ const CustomModal = ({
       animationType="fade"
       onRequestClose={onClose}
     >
-      <View style={styles.overlay}>
-        <Pressable
-          style={StyleSheet.absoluteFill}
-          onPress={closeOnBackdrop ? onClose : undefined}
-        />
+      {Platform.OS == "android" ? (
+        <View
+          style={[
+            styles.overlay,
+            {
+              backgroundColor: "rgba(15, 23, 42, 0.55)",
+            },
+          ]}
+        >
+          <Pressable
+            style={StyleSheet.absoluteFill}
+            onPress={closeOnBackdrop ? onClose : undefined}
+          />
 
-        <View style={[styles.card, cardStyle]}>
-          <View
-            style={[
-              styles.iconContainer,
-              { backgroundColor: `${iconColor}15` },
-            ]}
-          >
-            <MaterialCommunityIcons name={icon} size={32} color={iconColor} />
-          </View>
+          <View style={[styles.card, cardStyle]}>
+            <View
+              style={[
+                styles.iconContainer,
+                { backgroundColor: `${iconColor}15` },
+              ]}
+            >
+              <MaterialCommunityIcons name={icon} size={32} color={iconColor} />
+            </View>
 
-          <Text style={styles.title}>{title}</Text>
+            <Text style={styles.title}>{title}</Text>
 
-          {!!message && <Text style={styles.message}>{message}</Text>}
+            {!!message && <Text style={styles.message}>{message}</Text>}
 
-          {children}
+            {children}
 
-          <View style={styles.buttonContainer}>
-            {showCancel && (
+            <View style={styles.buttonContainer}>
+              {showCancel && (
+                <Pressable
+                  onPress={onClose}
+                  style={({ pressed }) => [
+                    styles.button,
+                    styles.cancelButton,
+                    pressed && styles.pressed,
+                  ]}
+                >
+                  <Text style={styles.cancelText}>{cancelText}</Text>
+                </Pressable>
+              )}
+
               <Pressable
-                onPress={onClose}
+                onPress={onConfirm ?? onClose}
                 style={({ pressed }) => [
                   styles.button,
-                  styles.cancelButton,
+                  styles.confirmButton,
+                  { backgroundColor: iconColor },
                   pressed && styles.pressed,
                 ]}
               >
-                <Text style={styles.cancelText}>{cancelText}</Text>
+                <Text style={styles.confirmText}>{confirmText}</Text>
               </Pressable>
-            )}
-
-            <Pressable
-              onPress={onConfirm ?? onClose}
-              style={({ pressed }) => [
-                styles.button,
-                styles.confirmButton,
-                { backgroundColor: iconColor },
-                pressed && styles.pressed,
-              ]}
-            >
-              <Text style={styles.confirmText}>{confirmText}</Text>
-            </Pressable>
+            </View>
           </View>
         </View>
-      </View>
+      ) : (
+        <BlurView intensity={20} style={styles.overlay}>
+          <Pressable
+            style={StyleSheet.absoluteFill}
+            onPress={closeOnBackdrop ? onClose : undefined}
+          />
+
+          <View style={[styles.card, cardStyle]}>
+            <View
+              style={[
+                styles.iconContainer,
+                { backgroundColor: `${iconColor}15` },
+              ]}
+            >
+              <MaterialCommunityIcons name={icon} size={32} color={iconColor} />
+            </View>
+
+            <Text style={styles.title}>{title}</Text>
+
+            {!!message && <Text style={styles.message}>{message}</Text>}
+
+            {children}
+
+            <View style={styles.buttonContainer}>
+              {showCancel && (
+                <Pressable
+                  onPress={onClose}
+                  style={({ pressed }) => [
+                    styles.button,
+                    styles.cancelButton,
+                    pressed && styles.pressed,
+                  ]}
+                >
+                  <Text style={styles.cancelText}>{cancelText}</Text>
+                </Pressable>
+              )}
+
+              <Pressable
+                onPress={onConfirm ?? onClose}
+                style={({ pressed }) => [
+                  styles.button,
+                  styles.confirmButton,
+                  { backgroundColor: iconColor },
+                  pressed && styles.pressed,
+                ]}
+              >
+                <Text style={styles.confirmText}>{confirmText}</Text>
+              </Pressable>
+            </View>
+          </View>
+        </BlurView>
+      )}
     </Modal>
   );
 };
@@ -106,7 +168,7 @@ export default CustomModal;
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: "rgba(15, 23, 42, 0.55)",
+    // backgroundColor: "rgba(15, 23, 42, 0.55)",
     justifyContent: "center",
     alignItems: "center",
     paddingHorizontal: 24,

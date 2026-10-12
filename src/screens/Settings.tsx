@@ -37,6 +37,7 @@ const Settings = ({ navigation }: any) => {
   const soundNotificationSettings = useSelector(
     (state: RootState) => state.app.alarmSettings,
   );
+
   const dispatch = useDispatch();
   const appVolume = useSelector((state: RootState) => state.app.volume);
   const [showVolume, setShowVolume] = useState(false);
@@ -480,7 +481,6 @@ const styles = StyleSheet.create({
   primaryButtonText: {
     color: "#FFFFFF",
     fontSize: 16,
-    fontWeight: "600",
     fontFamily: "Outfit-SemiBold",
   },
 

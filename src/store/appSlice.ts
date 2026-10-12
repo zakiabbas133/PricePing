@@ -13,12 +13,21 @@ export type SelectedSound = {
   fileFullName: string;
 };
 
+export type PremiumUserType = {
+  trialStartedAt: string | null;
+  alarmsCreatedCount: number;
+  isPremium: boolean;
+  paywallVisible: boolean;
+};
+
 export type AppSliceState = {
   alarms: PriceAlarm[];
   alarmSettings: AlarmSettings;
   selectedSound: SelectedSound;
   volume: number;
   userId: string;
+  premiumUser: PremiumUserType;
+  alarmsCount: number;
 };
 
 const initialState: AppSliceState = {
@@ -35,14 +44,29 @@ const initialState: AppSliceState = {
   },
   volume: 0,
   userId: "",
+  premiumUser: {
+    trialStartedAt: new Date().toISOString(),
+    alarmsCreatedCount: 0,
+    isPremium: false,
+    paywallVisible: false,
+  },
+  alarmsCount: 0,
 };
 
 const appSlice = createSlice({
   name: "app",
   initialState,
   reducers: {
+    setIsUserPremium: (state, action: PayloadAction<PremiumUserType>) => {
+      state.premiumUser = action.payload;
+    },
+
     setAlarms: (state, action: PayloadAction<PriceAlarm[]>) => {
       state.alarms = action.payload;
+    },
+
+    setUserAlarmsCount: (state, action: PayloadAction<number>) => {
+      state.alarmsCount = action.payload;
     },
 
     deleteSelectedAlarm: (state, action: PayloadAction<number>) => {
@@ -78,7 +102,9 @@ const appSlice = createSlice({
 });
 
 export const {
+  setIsUserPremium,
   setAlarms,
+  setUserAlarmsCount,
   deleteSelectedAlarm,
   setAlarmSettings,
   setSoundEnabled,

@@ -94,7 +94,6 @@ const AlarmSounds = ({ navigation }: any) => {
     (state: RootState) => state.app.selectedSound,
   );
   const volume = useSelector((state: RootState) => state.app.volume);
-  console.log(volume);
 
   const [userSelectedSound, setUserSelectedSound] = useState(selectedSound.id);
   const [playingId, setPlayingId] = useState<string | null>(null);
@@ -509,7 +508,6 @@ const styles = StyleSheet.create({
   primaryButtonText: {
     color: "#FFFFFF",
     fontSize: 16,
-    fontWeight: "600",
     fontFamily: "Outfit-SemiBold",
   },
 

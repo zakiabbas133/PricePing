@@ -4,6 +4,7 @@ import {
   setAlarms,
   setNotificationsEnabled,
   setSoundEnabled,
+  setUserAlarmsCount,
 } from "../store/appSlice";
 import useNotifications from "./useNotifications";
 import createAlarmOnBackend from "../api/createAlarm";
@@ -139,6 +140,8 @@ const useGeneratePrice = (initialCurreny = "BTCUSDT") => {
       if (res.success) {
         dispatch(setAlarms(res.data));
       }
+
+      return res;
     },
     [dispatch],
   );
@@ -330,6 +333,7 @@ const useGeneratePrice = (initialCurreny = "BTCUSDT") => {
 
       if (res.success) {
         dispatch(setAlarms(res.data));
+        dispatch(setUserAlarmsCount(res.alarmsCount));
       }
 
       /**

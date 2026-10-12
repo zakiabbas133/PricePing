@@ -190,6 +190,7 @@ const styles = StyleSheet.create({
   wrapper: {
     position: "absolute",
     paddingHorizontal: 20,
+    width: '100%'
   },
 
   container: {

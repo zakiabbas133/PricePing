@@ -15,7 +15,7 @@ function IOSPricePingTabs() {
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: "#2B77F1",
-        tabBarInactiveTintColor: "#626770",
+        tabBarInactiveTintColor: "#626770"
       }}
     >
       <NativeTab.Screen

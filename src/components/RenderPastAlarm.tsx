@@ -1,42 +1,9 @@
-import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Image, StyleSheet, Text, View } from "react-native";
 import { PriceAlarm } from "../hooks/useGeneratePrice";
 import { coinImages } from "./RenderAlarm";
-import { AntDesign, Ionicons } from "@expo/vector-icons";
-// import { useState } from "react";
-// import { ModalContent, ModalType } from "../screens/Home";
-// import CustomDeleteModal from "./CustomDeleteModal";
+import { AntDesign } from "@expo/vector-icons";
 
-const RenderPastAlarm = ({
-  alarm,
-  // deleteAlarm,
-}: {
-  alarm: PriceAlarm;
-  deleteAlarm: (id: number) => void;
-}) => {
-  // const [modalVisible, setModalVisible] = useState(false);
-  // const [modalContent, setModalContent] = useState<ModalContent>({
-  //   title: "",
-  //   description: "",
-  //   type: "warn",
-  // });
-
-  // const showModal = (
-  //   title: string,
-  //   description: string,
-  //   type: ModalType = "warn",
-  // ) => {
-  //   setModalContent({ title, description, type });
-  //   setModalVisible(true);
-  // };
-
-  // const openDeleteAlarmModal = () => {
-  //   showModal(
-  //     "Delete Alarm",
-  //     `Are you sure you want to delete the alarm?`,
-  //     "success",
-  //   );
-  // };
-
+const RenderPastAlarm = ({ alarm }: { alarm: PriceAlarm }) => {
   const formatPrice = (value: number | null) => {
     if (value === null || value === undefined) {
       return "—";
@@ -101,7 +68,6 @@ const RenderPastAlarm = ({
             gap: 10,
           }}
         >
-          {/* <FontAwesome5 name="bitcoin" size={35} color="#F7931A" /> */}
           {showCoin(alarm.symbol)}
           <View>
             <View
@@ -300,28 +266,8 @@ const RenderPastAlarm = ({
               USDT
             </Text>
           </View>
-          {/* <TouchableOpacity
-            onPress={openDeleteAlarmModal}
-            style={{
-              marginTop: 5,
-              alignSelf: "flex-end",
-            }}
-          >
-            <Ionicons name="trash-outline" size={24} color="#B42318" />
-          </TouchableOpacity> */}
         </View>
       </View>
-
-      {/* <CustomDeleteModal
-        visible={modalVisible}
-        onConfirm={async () => {
-          setModalVisible(false);
-          await deleteAlarm(alarm.id);
-        }}
-        onCancel={() => setModalVisible(false)}
-        title={modalContent.title}
-        message={modalContent.description}
-      /> */}
     </View>
   );
 };
@@ -339,7 +285,6 @@ const styles = StyleSheet.create({
 
   badgeText: {
     fontSize: 11,
-    fontWeight: "600",
     color: "#027A48",
     fontFamily: "Outfit-SemiBold",
   },

@@ -406,7 +406,6 @@ const styles = StyleSheet.create({
 
   badgeText: {
     fontSize: 11,
-    fontWeight: "600",
     color: "#027A48",
     fontFamily: "Outfit-SemiBold",
   },

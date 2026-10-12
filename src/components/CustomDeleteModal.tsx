@@ -5,8 +5,10 @@ import {
   Text,
   View,
   ActivityIndicator,
+  Platform,
 } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { BlurView } from "expo-blur";
 
 interface CustomDeleteModalProps {
   visible: boolean;
@@ -33,61 +35,126 @@ const CustomDeleteModal = ({
       statusBarTranslucent
       onRequestClose={onCancel}
     >
-      <View style={styles.overlay}>
-        <View style={styles.modalContainer}>
-          {/* Icon */}
-          <View style={styles.iconContainer}>
-            <MaterialCommunityIcons
-              name="trash-can-outline"
-              size={30}
-              color="#D92D20"
-            />
-          </View>
+      {Platform.OS == "android" ? (
+        <View
+          style={[
+            styles.overlay,
+            {
+              backgroundColor: "rgba(16, 24, 40, 0.55)",
+            },
+          ]}
+        >
+          <View style={styles.modalContainer}>
+            {/* Icon */}
+            <View style={styles.iconContainer}>
+              <MaterialCommunityIcons
+                name="trash-can-outline"
+                size={30}
+                color="#D92D20"
+              />
+            </View>
 
-          {/* Title */}
-          <Text style={styles.title}>{title}</Text>
+            {/* Title */}
+            <Text style={styles.title}>{title}</Text>
 
-          {/* Message */}
-          <Text style={styles.message}>{message}</Text>
+            {/* Message */}
+            <Text style={styles.message}>{message}</Text>
 
-          {/* Actions */}
-          <View style={styles.buttonContainer}>
-            <Pressable
-              onPress={onCancel}
-              disabled={loading}
-              style={({ pressed }) => [
-                styles.cancelButton,
-                pressed && styles.pressedButton,
-              ]}
-            >
-              <Text style={styles.cancelButtonText}>Cancel</Text>
-            </Pressable>
+            {/* Actions */}
+            <View style={styles.buttonContainer}>
+              <Pressable
+                onPress={onCancel}
+                disabled={loading}
+                style={({ pressed }) => [
+                  styles.cancelButton,
+                  pressed && styles.pressedButton,
+                ]}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </Pressable>
 
-            <Pressable
-              onPress={onConfirm}
-              disabled={loading}
-              style={({ pressed }) => [
-                styles.deleteButton,
-                pressed && styles.pressedButton,
-                loading && styles.disabledButton,
-              ]}
-            >
-              {loading ? (
-                <ActivityIndicator size="small" color="#FFFFFF" />
-              ) : (
-                <>
-                  <MaterialCommunityIcons
-                    name="trash-can-outline"
-                    size={17}
-                    color="#FFFFFF"
-                  />
-                  <Text style={styles.deleteButtonText}>Delete</Text>
-                </>
-              )}
-            </Pressable>
+              <Pressable
+                onPress={onConfirm}
+                disabled={loading}
+                style={({ pressed }) => [
+                  styles.deleteButton,
+                  pressed && styles.pressedButton,
+                  loading && styles.disabledButton,
+                ]}
+              >
+                {loading ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <>
+                    <MaterialCommunityIcons
+                      name="trash-can-outline"
+                      size={17}
+                      color="#FFFFFF"
+                    />
+                    <Text style={styles.deleteButtonText}>Delete</Text>
+                  </>
+                )}
+              </Pressable>
+            </View>
           </View>
         </View>
-      </View>
+      ) : (
+        <BlurView intensity={20} style={styles.overlay}>
+          <View style={styles.modalContainer}>
+            {/* Icon */}
+            <View style={styles.iconContainer}>
+              <MaterialCommunityIcons
+                name="trash-can-outline"
+                size={30}
+                color="#D92D20"
+              />
+            </View>
+
+            {/* Title */}
+            <Text style={styles.title}>{title}</Text>
+
+            {/* Message */}
+            <Text style={styles.message}>{message}</Text>
+
+            {/* Actions */}
+            <View style={styles.buttonContainer}>
+              <Pressable
+                onPress={onCancel}
+                disabled={loading}
+                style={({ pressed }) => [
+                  styles.cancelButton,
+                  pressed && styles.pressedButton,
+                ]}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </Pressable>
+
+              <Pressable
+                onPress={onConfirm}
+                disabled={loading}
+                style={({ pressed }) => [
+                  styles.deleteButton,
+                  pressed && styles.pressedButton,
+                  loading && styles.disabledButton,
+                ]}
+              >
+                {loading ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <>
+                    <MaterialCommunityIcons
+                      name="trash-can-outline"
+                      size={17}
+                      color="#FFFFFF"
+                    />
+                    <Text style={styles.deleteButtonText}>Delete</Text>
+                  </>
+                )}
+              </Pressable>
+            </View>
+          </View>
+        </BlurView>
+      )}
     </Modal>
   );
 };
@@ -97,7 +164,7 @@ export default CustomDeleteModal;
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: "rgba(16, 24, 40, 0.55)",
+    // backgroundColor: "rgba(16, 24, 40, 0.55)",
     justifyContent: "center",
     alignItems: "center",
     paddingHorizontal: 24,

@@ -1,6 +1,10 @@
 import Constants from "expo-constants";
 const getAlarms = async (userId: string) => {
   try {
+    if (!userId) {
+      console.warn("Cannot fetch alarms: userId is missing.");
+      return;
+    }
     const apiBaseUrl = Constants.expoConfig?.extra?.apiBaseUrl; // LIVE
     // const apiBaseUrl = Constants.expoConfig?.extra?.localApiBaseUrl; // LOCAL
 

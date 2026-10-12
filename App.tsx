@@ -8,6 +8,7 @@ import { PersistGate } from "redux-persist/integration/react";
 import { persistor, store } from "./src/store/store";
 import AppSplashScreen from "./src/screens/SplashScreen";
 import PricePingStack from "./src/navigation/StackNavigator";
+import { configureRevenueCat } from "./src/components/InitializeRevenueCat";
 
 export default function App() {
   const [loaded, error] = useFonts({
@@ -29,6 +30,10 @@ export default function App() {
       return () => clearTimeout(timer);
     }
   }, [loaded, error]);
+
+  useEffect(() => {
+    configureRevenueCat();
+  }, []);
 
   if (splashVisible) {
     return (
@@ -67,8 +72,8 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    backgroundColor: 'red',
+    backgroundColor: "red",
     height: 100,
-    zIndex: 999
+    zIndex: 999,
   },
 });

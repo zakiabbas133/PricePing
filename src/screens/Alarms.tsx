@@ -125,7 +125,12 @@ const Alarms = () => {
           paddingBottom: insets.bottom + 70,
         }}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          <RefreshControl
+            colors={["#2B77F1"]}
+            tintColor="#2B77F1"
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+          />
         }
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={true}
@@ -187,17 +192,24 @@ const Alarms = () => {
                       deleteAlarm={() => {
                         setLoadingApi(true);
                         deleteAlarm(alarm.id)
-                          .then(() => {
+                          .then((data) => {
                             setLoadingApi(false);
+                            if (data.success) {
+                              showModal(
+                                "Delete Alarm",
+                                `Alarm deleted successfully.`,
+                                "success",
+                              );
+                            }
                           })
-                          .finally(() => {
+                          .catch(() => {
                             setLoadingApi(false);
+                            showModal(
+                              "Delete Alarm",
+                              `Unable to delete Alarm.`,
+                              "error",
+                            );
                           });
-                        showModal(
-                          "Delete Alarm",
-                          `Alarm deleted successfully.`,
-                          "success",
-                        );
                       }}
                     />
                   );
@@ -227,27 +239,7 @@ const Alarms = () => {
             ) : (
               <View style={{ gap: 10 }}>
                 {pastAlarms.map((alarm, index) => {
-                  return (
-                    <RenderPastAlarm
-                      key={index}
-                      alarm={alarm}
-                      deleteAlarm={() => {
-                        setLoadingApi(true);
-                        deleteAlarm(alarm.id)
-                          .then(() => {
-                            setLoadingApi(false);
-                          })
-                          .finally(() => {
-                            setLoadingApi(false);
-                          });
-                        showModal(
-                          "Delete Alarm",
-                          `Alarm deleted successfully.`,
-                          "success",
-                        );
-                      }}
-                    />
-                  );
+                  return <RenderPastAlarm key={index} alarm={alarm} />;
                 })}
               </View>
             )}
@@ -314,7 +306,7 @@ const styles = StyleSheet.create({
 
   countBadgeText: {
     fontSize: 12,
-    fontWeight: "700",
+    fontFamily: "Outfit-SemiBold",
     color: "#1677FF",
   },
 
@@ -434,7 +426,7 @@ const styles = StyleSheet.create({
 
   alarmSymbol: {
     fontSize: 17,
-    fontWeight: "700",
+    fontFamily: "Outfit-SemiBold",
     color: "#101828",
   },
 
@@ -447,7 +439,7 @@ const styles = StyleSheet.create({
 
   badgeText: {
     fontSize: 11,
-    fontWeight: "600",
+    fontFamily: "Outfit-Medium",
     color: "#027A48",
   },
 
@@ -471,7 +463,7 @@ const styles = StyleSheet.create({
 
   directionArrow: {
     fontSize: 20,
-    fontWeight: "700",
+    fontFamily: "Outfit-SemiBold",
     marginRight: 5,
   },
 
@@ -483,7 +475,7 @@ const styles = StyleSheet.create({
 
   alarmPrice: {
     fontSize: 20,
-    fontWeight: "700",
+    fontFamily: "Outfit-SemiBold",
     color: "#101828",
   },
 
@@ -494,7 +486,7 @@ const styles = StyleSheet.create({
   },
 
   detailStrong: {
-    fontWeight: "700",
+    fontFamily: "Outfit-SemiBold",
     color: "#101828",
   },
 
@@ -506,7 +498,7 @@ const styles = StyleSheet.create({
 
   deleteButtonText: {
     fontSize: 13,
-    fontWeight: "600",
+    fontFamily: "Outfit-Medium",
     color: "#F04438",
   },
 

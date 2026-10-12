@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   KeyboardAvoidingView,
   Platform,
@@ -18,6 +18,11 @@ import DropdownElement from "../components/Dropdown";
 import CustomModal from "../components/CustomModal";
 import useGeneratePrice from "../hooks/useGeneratePrice";
 import CustomApiLoader from "../components/CustomApiLoader";
+import { isTrialExpired } from "../components/CheckPaywallOptions";
+import { RootState } from "../store/store";
+import { useSelector } from "react-redux";
+import { useNavigation } from "@react-navigation/native";
+import { Navigation } from "../navigation/StackNavigator";
 
 type SymbolScreenProps = {
   symbol: string;
@@ -34,22 +39,26 @@ export type ModalContent = {
 
 const SymbolScreen = ({ symbol, setSymbol }: SymbolScreenProps) => {
   const insets = useSafeAreaInsets();
+  const navigation = useNavigation<Navigation>();
   const { price, change24h, status, createAlarm } = useGeneratePrice(symbol);
+
+  const startingDate = useSelector(
+    (state: RootState) => state.app.premiumUser.trialStartedAt,
+  );
+  const alarmsCount = useSelector((state: RootState) => state.app.alarmsCount);
 
   const [targetInput, setTargetInput] = useState("");
   const [priceError, setPriceError] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
-
+  const [direction, setDirection] = useState<"above" | "below">("above");
+  const [futureOrSpot, setFutureOrSpot] = useState<"future" | "spot">("future");
+  const [creating, setCreating] = useState(false);
+  const [loadingApi, setLoadingApi] = useState(false);
   const [modalContent, setModalContent] = useState<ModalContent>({
     title: "",
     description: "",
     type: "success",
   });
-
-  const [direction, setDirection] = useState<"above" | "below">("above");
-  const [futureOrSpot, setFutureOrSpot] = useState<"future" | "spot">("future");
-  const [creating, setCreating] = useState(false);
-  const [loadingApi, setLoadingApi] = useState(false);
 
   const formatPrice = (value: number | null | undefined) => {
     if (value == null || !Number.isFinite(value)) {
@@ -72,6 +81,12 @@ const SymbolScreen = ({ symbol, setSymbol }: SymbolScreenProps) => {
   };
 
   const handleCreateAlarm = async () => {
+    const expired = isTrialExpired(startingDate, alarmsCount);
+    if (expired) {
+      navigation.navigate("PresentPaywall");
+      return;
+    }
+
     if (creating) return;
 
     const normalizedSymbol = symbol.trim().toUpperCase();
@@ -231,7 +246,6 @@ const SymbolScreen = ({ symbol, setSymbol }: SymbolScreenProps) => {
             {/* <Pressable
               onPress={() => {
                 setFutureOrSpot("spot");
-                navigation.navigate("PlayAlarm");
               }}
               style={[
                 styles.directionButton,
@@ -249,7 +263,10 @@ const SymbolScreen = ({ symbol, setSymbol }: SymbolScreenProps) => {
             </Pressable> */}
 
             <Pressable
-              onPress={() => setFutureOrSpot("future")}
+              onPress={() => {
+                setFutureOrSpot("future");
+                // navigation.navigate("PresentPaywall");
+              }}
               style={[
                 styles.directionButton,
                 futureOrSpot === "future" && styles.marketSelected,
@@ -514,7 +531,6 @@ const styles = StyleSheet.create({
 
   label: {
     fontSize: 14,
-    fontWeight: "600",
     color: "#101828",
     marginBottom: 8,
     fontFamily: "Outfit-SemiBold",
@@ -573,7 +589,6 @@ const styles = StyleSheet.create({
 
   directionButtonText: {
     fontSize: 15,
-    fontWeight: "600",
     color: "#344054",
     fontFamily: "Outfit-Medium",
   },
@@ -604,7 +619,6 @@ const styles = StyleSheet.create({
   primaryButtonText: {
     color: "#FFFFFF",
     fontSize: 16,
-    fontWeight: "600",
     fontFamily: "Outfit-SemiBold",
   },
 

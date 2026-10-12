@@ -48,41 +48,18 @@ Notifications.setNotificationHandler({
 
 const useNotifications = () => {
   const navigation = useNavigation<Navigation>();
-
   const dispatch = useDispatch();
-
-  /**
-   * The Expo push token is the only identifier we use.
-   *
-   * We keep it in a ref so multiple components/effects calling
-   * getPushToken() don't unnecessarily register the same token.
-   */
   const pushTokenRef = useRef<string | null>(null);
-
-  /**
-   * Prevent multiple simultaneous token requests.
-   */
   const tokenPromiseRef = useRef<Promise<string | null> | null>(null);
-
-  /**
-   * Prevent multiple simultaneous API synchronization calls.
-   */
   const tokenSyncPromiseRef = useRef<Promise<string | null> | null>(null);
-
   const [notification, setNotification] =
     useState<Notifications.Notification | null>(null);
-
   const [permissionGranted, setPermissionGranted] = useState(false);
 
-  /**
-   * Request notification permission.
-   */
   const requestPermissions = useCallback(async () => {
     try {
       const existing = await Notifications.getPermissionsAsync();
-
       let status = existing.status;
-
       if (status !== "granted") {
         const requested = await Notifications.requestPermissionsAsync();
 
@@ -90,35 +67,20 @@ const useNotifications = () => {
       }
 
       const granted = status === "granted";
-
       setPermissionGranted(granted);
-
       return granted;
     } catch (error) {
       console.error("Notification permission error:", error);
-
       setPermissionGranted(false);
-
       return false;
     }
   }, []);
 
-  /**
-   * Get the current Expo push token.
-   *
-   * No userId is involved.
-   */
   const getPushToken = useCallback(async () => {
-    /**
-     * Return the token already obtained during this app session.
-     */
     if (pushTokenRef.current) {
       return pushTokenRef.current;
     }
 
-    /**
-     * If another request is already running, wait for it.
-     */
     if (tokenPromiseRef.current) {
       return tokenPromiseRef.current;
     }
@@ -168,7 +130,7 @@ const useNotifications = () => {
     tokenPromiseRef.current = promise;
 
     return promise;
-  }, [requestPermissions]);
+  }, [dispatch, requestPermissions]);
 
   const syncPushToken = useCallback(async () => {
     if (tokenSyncPromiseRef.current) {

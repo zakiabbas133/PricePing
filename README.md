@@ -64,9 +64,9 @@ The app is designed around a simple idea:
 | Expo Router / React Navigation              | App navigation                        |
 | TypeScript / JavaScript                     | Application development               |
 | Binance WebSocket                           | Real-time crypto prices               |
-| `@react-native-async-storage/async-storage` | Local persistence                     |
-| `expo-notifications`                        | Notifications and alarm alerts        |
-| EAS Build                                   | Android development/production builds |
+| @react-native-async-storage/async-storage   | Local persistence                     |
+| expo-notifications                          | Notifications and alarm alerts        |
+| EAS Build                                   | Android/iOS development/production    |
 
 ---
 
