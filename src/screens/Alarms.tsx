@@ -11,7 +11,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "../store/store";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { setAlarms } from "../store/appSlice";
+import { setAlarms, setIsUserPremium } from "../store/appSlice";
 import { ModalContent, ModalType } from "./Home";
 import { LinearGradient } from "expo-linear-gradient";
 import RenderAlarm from "../components/RenderAlarm";
@@ -109,6 +109,15 @@ const Alarms = () => {
 
   useEffect(() => {
     alarmsOnBackend();
+
+    // dispatch(
+    //   setIsUserPremium({
+    //     trialStartedAt: new Date().toISOString(),
+    //     alarmsCreatedCount: 3,
+    //     isPremium: false,
+    //     paywallVisible: false,
+    //   }),
+    // );
   }, []);
 
   return (
