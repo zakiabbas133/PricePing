@@ -193,36 +193,42 @@ const Alarms = () => {
               <EmptyAlarmState type="active" />
             ) : (
               <View style={{ gap: 10 }}>
-                {activeAlarms.map((alarm, index) => {
-                  return (
-                    <RenderAlarm
-                      key={index}
-                      alarm={alarm}
-                      deleteAlarm={() => {
-                        setLoadingApi(true);
-                        deleteAlarm(alarm.id)
-                          .then((data) => {
-                            setLoadingApi(false);
-                            if (data.success) {
+                {activeAlarms
+                  .sort(
+                    (a, b) =>
+                      new Date(b.createdAt).getTime() -
+                      new Date(a.createdAt).getTime(),
+                  )
+                  .map((alarm, index) => {
+                    return (
+                      <RenderAlarm
+                        key={index}
+                        alarm={alarm}
+                        deleteAlarm={() => {
+                          setLoadingApi(true);
+                          deleteAlarm(alarm.id)
+                            .then((data) => {
+                              setLoadingApi(false);
+                              if (data.success) {
+                                showModal(
+                                  "Delete Alarm",
+                                  `Alarm deleted successfully.`,
+                                  "success",
+                                );
+                              }
+                            })
+                            .catch(() => {
+                              setLoadingApi(false);
                               showModal(
                                 "Delete Alarm",
-                                `Alarm deleted successfully.`,
-                                "success",
+                                `Unable to delete Alarm.`,
+                                "error",
                               );
-                            }
-                          })
-                          .catch(() => {
-                            setLoadingApi(false);
-                            showModal(
-                              "Delete Alarm",
-                              `Unable to delete Alarm.`,
-                              "error",
-                            );
-                          });
-                      }}
-                    />
-                  );
-                })}
+                            });
+                        }}
+                      />
+                    );
+                  })}
               </View>
             )}
           </>
@@ -247,9 +253,15 @@ const Alarms = () => {
               <EmptyAlarmState type="past" />
             ) : (
               <View style={{ gap: 10 }}>
-                {pastAlarms.map((alarm, index) => {
-                  return <RenderPastAlarm key={index} alarm={alarm} />;
-                })}
+                {pastAlarms
+                  .sort(
+                    (a, b) =>
+                      new Date(b.triggeredAt).getTime() -
+                      new Date(a.triggeredAt).getTime(),
+                  )
+                  .map((alarm, index) => {
+                    return <RenderPastAlarm key={index} alarm={alarm} />;
+                  })}
               </View>
             )}
           </>
