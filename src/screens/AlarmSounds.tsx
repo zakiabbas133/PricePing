@@ -96,6 +96,7 @@ const AlarmSounds = ({ navigation }: any) => {
   const volume = useSelector((state: RootState) => state.app.volume);
 
   const [userSelectedSound, setUserSelectedSound] = useState(selectedSound.id);
+  const [pendingPlayId, setPendingPlayId] = useState<string | null>(null);
   const [playingId, setPlayingId] = useState<string | null>(null);
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [loadingApi, setLoadingApi] = useState(false);
@@ -117,7 +118,7 @@ const AlarmSounds = ({ navigation }: any) => {
     const userIdToSend = await userId;
     const res = await updateAlarmSoundOnDb(userIdToSend, sound);
     if (res.success) {
-      showModal("Alarm Sound", `Alarm sound updated successfully.`, "success");
+      showModal("Alarm Sound", "Alarm sound updated successfully.", "success");
       dispatch(
         setSelectedSound({
           id: res.data.alarmSound,
@@ -129,7 +130,7 @@ const AlarmSounds = ({ navigation }: any) => {
         }),
       );
     } else {
-      showModal("Alarm Sound", `Unable to update alarm sound.`, "error");
+      showModal("Alarm Sound", "Unable to update alarm sound.", "error");
     }
     setLoadingApi(false);
   };
@@ -188,28 +189,61 @@ const AlarmSounds = ({ navigation }: any) => {
   );
 
   const togglePlayback = useCallback(
-    async (sound: SoundItem) => {
+    (sound: SoundItem) => {
       try {
         if (playingId === sound.id) {
           player.pause();
           setPlayingId(null);
+          setPendingPlayId(null);
           return;
         }
 
         setLoadingId(sound.id);
-        player.replace(sound.source);
+        player.pause();
+
+        setPendingPlayId(sound.id);
         setPlayingId(sound.id);
-        player.seekTo(0);
-        player.play();
-        setLoadingId(null);
+        player.replace(sound.source);
       } catch (error) {
-        console.error("Failed to play alarm sound:", error);
+        console.error("Failed to replace alarm sound:", error);
         setLoadingId(null);
         setPlayingId(null);
+        setPendingPlayId(null);
       }
     },
     [playingId, player],
   );
+
+  useEffect(() => {
+    if (!pendingPlayId || !status.isLoaded) {
+      return;
+    }
+
+    let cancelled = false;
+
+    const startPlayback = async () => {
+      try {
+        await player.seekTo(0);
+
+        if (cancelled) return;
+
+        player.play();
+        setLoadingId(null);
+        setPendingPlayId(null);
+      } catch (error) {
+        console.error("Failed to start alarm sound:", error);
+        setLoadingId(null);
+        setPlayingId(null);
+        setPendingPlayId(null);
+      }
+    };
+
+    void startPlayback();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [pendingPlayId, status.isLoaded, player]);
 
   const renderSound = ({ item }: { item: SoundItem }) => {
     const isSelected = userSelectedSound === item.id;

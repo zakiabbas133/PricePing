@@ -212,7 +212,7 @@ const Alarms = () => {
                               if (data.success) {
                                 showModal(
                                   "Delete Alarm",
-                                  `Alarm deleted successfully.`,
+                                  "Alarm deleted successfully.",
                                   "success",
                                 );
                               }
@@ -221,7 +221,7 @@ const Alarms = () => {
                               setLoadingApi(false);
                               showModal(
                                 "Delete Alarm",
-                                `Unable to delete Alarm.`,
+                                "Unable to delete Alarm.",
                                 "error",
                               );
                             });
