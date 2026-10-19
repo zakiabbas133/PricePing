@@ -329,7 +329,7 @@ const useGeneratePrice = (initialCurreny = "BTCUSDT") => {
        * Now:
        * createAlarmOnBackend(alarmToSend, pushToken)
        */
-      const res = await createAlarmOnBackend(alarmToSend, pushToken);
+      const res = await createAlarmOnBackend(alarmToSend, pushToken as string);
 
       if (res.success) {
         dispatch(setAlarms(res.data));

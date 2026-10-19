@@ -5,10 +5,10 @@ const getAlarms = async (userId: string) => {
       console.warn("Cannot fetch alarms: userId is missing.");
       return;
     }
-    const apiBaseUrl = Constants.expoConfig?.extra?.apiBaseUrl; // LIVE
-    // const apiBaseUrl = Constants.expoConfig?.extra?.localApiBaseUrl; // LOCAL
-
+    // const apiBaseUrl = Constants.expoConfig?.extra?.apiBaseUrl; // LIVE
+    const apiBaseUrl = Constants.expoConfig?.extra?.localApiBaseUrl; // LOCAL
     const xApiKey = Constants.expoConfig?.extra?.xApiKey;
+
     const response = await fetch(
       `${apiBaseUrl}/api/Notifications/getAlarms?userId=${userId}`,
       {
@@ -20,7 +20,7 @@ const getAlarms = async (userId: string) => {
       },
     );
     const responseText = await response.text();
-
+    
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}: ${responseText}`);
     }

@@ -113,11 +113,14 @@ const Alarms = () => {
     // dispatch(
     //   setIsUserPremium({
     //     trialStartedAt: new Date().toISOString(),
-    //     alarmsCreatedCount: 3,
+    //     alarmsCreatedCount: 0,
     //     isPremium: false,
     //     paywallVisible: false,
     //   }),
     // );
+
+    // console.log('dispatched empty');
+    
   }, []);
 
   return (

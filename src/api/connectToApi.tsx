@@ -6,8 +6,8 @@ const ConnectToApi = (
   Platform: string,
   DeviceId: string,
 ) => {
-  const apiBaseUrl = Constants.expoConfig?.extra?.apiBaseUrl; // LIVE
-  // const apiBaseUrl = Constants.expoConfig?.extra?.localApiBaseUrl; // LOCAL
+  // const apiBaseUrl = Constants.expoConfig?.extra?.apiBaseUrl; // LIVE
+  const apiBaseUrl = Constants.expoConfig?.extra?.localApiBaseUrl; // LOCAL
   const xApiKey = Constants.expoConfig?.extra?.xApiKey;
 
   const myHeaders = new Headers();

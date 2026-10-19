@@ -14,7 +14,7 @@ export async function configureRevenueCat(): Promise<void> {
     Platform.OS === "ios"
       ? "test_ojLJacCcrMMNLprTspzQmzgwCuC" //appl_lWnrZYxwQjCRzKzUNDRZaNdMwNC
       : Platform.OS === "android"
-        ? process.env.EXPO_PUBLIC_RC_ANDROID_API_KEY
+        ? 'test_ojLJacCcrMMNLprTspzQmzgwCuC'
         : undefined;
 
   if (!apiKey) {

@@ -43,10 +43,10 @@ const SymbolScreen = ({ symbol, setSymbol }: SymbolScreenProps) => {
   const { price, change24h, status, createAlarm } = useGeneratePrice(symbol);
 
   const startingDate = useSelector(
-    (state: RootState) => state.app.premiumUser.trialStartedAt,
+    (state: RootState) => state.app.premiumUser?.trialStartedAt,
   );
   const isPremium = useSelector(
-    (state: RootState) => state.app.premiumUser.isPremium,
+    (state: RootState) => state.app.premiumUser?.isPremium,
   );
   const alarmsCount = useSelector((state: RootState) => state.app.alarmsCount);
 
@@ -84,13 +84,13 @@ const SymbolScreen = ({ symbol, setSymbol }: SymbolScreenProps) => {
   };
 
   const handleCreateAlarm = async () => {
-    const expired = isTrialExpired(startingDate, alarmsCount, isPremium);
-    if (expired) {
-      requestAnimationFrame(() => {
-        navigation.navigate("PresentPaywall");
-      });
-      return;
-    }
+    // const expired = isTrialExpired(startingDate, alarmsCount, isPremium);
+    // if (expired) {
+    //   requestAnimationFrame(() => {
+    //     navigation.navigate("PresentPaywall");
+    //   });
+    //   return;
+    // }
 
     if (creating) return;
 
@@ -159,12 +159,10 @@ const SymbolScreen = ({ symbol, setSymbol }: SymbolScreenProps) => {
       );
 
       setLoadingApi(false);
-    } catch (error) {
+    } catch (error: any) {
       showModal(
         "Unable to Create Alarm",
-        error instanceof Error
-          ? error.message
-          : "Something went wrong. Please try again.",
+        error.message ?? "Something went wrong. Please try again.",
       );
       setLoadingApi(false);
     } finally {
