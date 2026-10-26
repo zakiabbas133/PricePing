@@ -1,10 +1,9 @@
 import Constants from "expo-constants";
 const deleteAlarmFromDb = async (id: number) => {
   try {
-    // const apiBaseUrl = Constants.expoConfig?.extra?.apiBaseUrl; // LIVE
-    const apiBaseUrl = Constants.expoConfig?.extra?.localApiBaseUrl; // LOCAL
+    const apiBaseUrl = Constants.expoConfig?.extra?.apiBaseUrl;
     const xApiKey = Constants.expoConfig?.extra?.xApiKey;
-    
+
     const response = await fetch(
       `${apiBaseUrl}/api/Notifications/deleteAlarm?id=${id}`,
       {
@@ -18,13 +17,16 @@ const deleteAlarmFromDb = async (id: number) => {
     const responseText = await response.text();
 
     if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${responseText}`);
+      return {
+        status: false,
+        message: "Unable to delete alarm. Please try again later.",
+      };
     }
 
     return JSON.parse(responseText);
   } catch (error) {
     console.error("delete alarm error:", error);
-    throw error;
+    return error;
   }
 };
 

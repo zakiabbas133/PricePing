@@ -39,9 +39,11 @@ export const coinImages: Record<string, any> = {
 const RenderAlarm = ({
   alarm,
   deleteAlarm,
+  isOffline
 }: {
   alarm: PriceAlarm;
   deleteAlarm: (id: number) => void;
+  isOffline: boolean
 }) => {
   const [modalVisible, setModalVisible] = useState(false);
   const [modalContent, setModalContent] = useState<ModalContent>({
@@ -374,7 +376,9 @@ const RenderAlarm = ({
             {formatDateTime(alarm.createdAt)}
           </Text>
         </View>
-        <TouchableOpacity onPress={openDeleteAlarmModal}>
+        <TouchableOpacity disabled={isOffline} style={{
+          opacity: isOffline ? 0.3 : 1
+        }} onPress={openDeleteAlarmModal}>
           <Ionicons name="trash-outline" size={24} color="#B42318" />
         </TouchableOpacity>
       </View>

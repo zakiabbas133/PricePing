@@ -1,12 +1,19 @@
 import { useEffect, useRef } from "react";
-import { Animated, StyleSheet, TouchableOpacity, View } from "react-native";
-import { FontAwesome } from "@expo/vector-icons";
+import {
+  Animated,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { Feather } from "@expo/vector-icons";
 import { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { LinearGradient } from "expo-linear-gradient";
 
-const PRIMARY = "#2B77F1";
-const INACTIVE = "#838383";
-const ACTIVE_BG = "#c5d6f1";
+const ACTIVE_COLOR = "#fff";
+const BAR_COLOR = "#1677FF";
+const ICON_COLOR = "#fff";
 
 const AndroidNativeBottomBar = ({
   state,
@@ -20,16 +27,20 @@ const AndroidNativeBottomBar = ({
       style={[
         styles.wrapper,
         {
-          bottom: insets.bottom + 10,
+          borderTopLeftRadius: 28,
+          borderTopRightRadius: 28,
+          paddingBottom: insets.bottom,
+          borderTopWidth: 1,
+          borderLeftWidth: 1,
+          borderRightWidth: 1,
+          borderColor: "#dddbdb",
         },
       ]}
     >
       <View style={styles.container}>
         {state.routes.map((route, index) => {
           const focused = state.index === index;
-
           const { options } = descriptors[route.key];
-
           const label =
             typeof options.tabBarLabel === "string"
               ? options.tabBarLabel
@@ -58,7 +69,7 @@ const AndroidNativeBottomBar = ({
             <AnimatedTab
               key={route.key}
               routeName={route.name}
-              label={label}
+              label={options.tabBarAccessibilityLabel ?? label}
               focused={focused}
               onPress={onPress}
               onLongPress={onLongPress}
@@ -85,55 +96,47 @@ const AnimatedTab = ({
   onPress,
   onLongPress,
 }: AnimatedTabProps) => {
-  const scale = useRef(new Animated.Value(1)).current;
-  const translateY = useRef(new Animated.Value(0)).current;
-  const labelOpacity = useRef(new Animated.Value(focused ? 1 : 0)).current;
+  const focusProgress = useRef(new Animated.Value(focused ? 1 : 0)).current;
+  const pressScale = useRef(new Animated.Value(1)).current;
 
-  const getIcon = () => {
+  const getIcon = (): React.ComponentProps<typeof Feather>["name"] => {
     switch (routeName) {
       case "Home":
         return "home";
       case "Alarms":
         return "bell";
       case "Settings":
-        return "cog";
+        return "settings";
       default:
         return "circle";
     }
   };
 
   useEffect(() => {
-    Animated.parallel([
-      Animated.spring(scale, {
-        toValue: focused ? 1 : 0.95,
-        useNativeDriver: true,
-        speed: 30,
-        bounciness: 6,
-      }),
-      Animated.timing(labelOpacity, {
-        toValue: focused ? 1 : 0,
-        duration: 150,
-        useNativeDriver: true,
-      }),
-    ]).start();
-  }, [focused]);
+    const animation = Animated.spring(focusProgress, {
+      toValue: focused ? 1 : 0,
+      useNativeDriver: true,
+      speed: 20,
+      bounciness: 9,
+    });
+
+    animation.start();
+
+    return () => animation.stop();
+  }, [focusProgress, focused]);
 
   const handlePress = () => {
-    scale.setValue(0.9);
-    translateY.setValue(2);
-
-    Animated.parallel([
-      Animated.spring(scale, {
-        toValue: focused ? 1 : 0.95,
+    Animated.sequence([
+      Animated.timing(pressScale, {
+        toValue: 0.84,
+        duration: 75,
         useNativeDriver: true,
-        speed: 30,
-        bounciness: 5,
       }),
-      Animated.spring(translateY, {
-        toValue: 0,
+      Animated.spring(pressScale, {
+        toValue: 1,
+        speed: 24,
+        bounciness: 10,
         useNativeDriver: true,
-        speed: 30,
-        bounciness: 5,
       }),
     ]).start();
 
@@ -142,45 +145,68 @@ const AnimatedTab = ({
 
   return (
     <TouchableOpacity
-      activeOpacity={0.9}
+      accessibilityRole="tab"
+      accessibilityLabel={label}
+      accessibilityState={{ selected: focused }}
+      activeOpacity={1}
       onPress={handlePress}
       onLongPress={onLongPress}
       style={styles.tabButton}
     >
       <Animated.View
+        pointerEvents="none"
+        style={[
+          styles.activeCircle,
+          {
+            opacity: focusProgress,
+            transform: [
+              {
+                translateY: focusProgress.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [10, 0],
+                }),
+              },
+              {
+                scale: focusProgress.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0.55, 1],
+                }),
+              },
+            ],
+          },
+        ]}
+      />
+      <Animated.View
         style={{
-          transform: [{ scale }, { translateY }],
+          alignItems: "center",
+          transform: [
+            { scale: pressScale },
+            {
+              translateY: focusProgress.interpolate({
+                inputRange: [0, 1],
+                outputRange: [0, -1],
+              }),
+            },
+          ],
         }}
       >
-        <View
-          style={[
-            styles.tabContent,
-            {
-              backgroundColor: focused ? ACTIVE_BG : "#fff",
-              width: focused ? "100%" : "100%",
-            },
-          ]}
+        <Feather
+          name={getIcon()}
+          size={focused ? 24 : 24}
+          color={focused ? ACTIVE_COLOR : "#000"}
+          style={{
+            top: focused ? -22 : 0,
+          }}
+        />
+        <Text
+          style={{
+            color: focused ? "#1677FF" : "#000",
+            fontFamily: "Outfit-Medium",
+            bottom: focused ? 2 : 0
+          }}
         >
-          <FontAwesome
-            name={getIcon()}
-            color={focused ? PRIMARY : INACTIVE}
-            size={26}
-          />
-
-          {focused && (
-            <Animated.Text
-              style={[
-                styles.label,
-                {
-                  opacity: labelOpacity,
-                  color: PRIMARY,
-                },
-              ]}
-            >
-              {label}
-            </Animated.Text>
-          )}
-        </View>
+          {routeName}
+        </Text>
       </Animated.View>
     </TouchableOpacity>
   );
@@ -189,62 +215,44 @@ const AnimatedTab = ({
 const styles = StyleSheet.create({
   wrapper: {
     position: "absolute",
-    paddingHorizontal: 20,
-    width: '100%'
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "#fff",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.5,
+    shadowRadius: 2.8,
+    elevation: 20,
   },
-
   container: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-    padding: 5,
-    width: "100%",
-    borderRadius: 99,
-    backgroundColor: "#fff",
-    elevation: 14,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 6,
-    },
-    shadowOpacity: 0.14,
-    shadowRadius: 14,
+    justifyContent: "space-around",
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
   },
-
   tabButton: {
-    width: "33.3333333%",
-  },
-
-  tabContent: {
+    flex: 1,
     paddingVertical: 10,
-    flexDirection: "row",
+    height: "100%",
     alignItems: "center",
     justifyContent: "center",
-    gap: 6,
-    borderRadius: 99,
   },
-
-  activeBackground: {
-    alignItems: "center",
+  activeCircle: {
     position: "absolute",
-    left: 0,
-    right: 0,
-    top: 0,
-    bottom: 0,
+    top: -30,
+    width: 60,
+    height: 60,
     borderRadius: 99,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.18,
-    shadowRadius: 8,
-  },
-
-  label: {
-    fontFamily: "Outfit-SemiBold",
-    fontSize: 16,
-    color: PRIMARY,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#1677FF",
+    borderWidth: 5,
+    borderColor: "#fff",
   },
 });
 

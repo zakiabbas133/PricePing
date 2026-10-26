@@ -17,6 +17,8 @@ import { RootState } from "../store/store";
 import { useSelector } from "react-redux";
 import { useNavigation } from "@react-navigation/native";
 import { Navigation } from "../navigation/StackNavigator";
+import { useNetworkState } from "expo-network";
+import { Feather } from "@expo/vector-icons";
 import AntDesign from "@expo/vector-icons/AntDesign";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import DropdownElement from "../components/Dropdown";
@@ -39,6 +41,10 @@ export type ModalContent = {
 
 const SymbolScreen = ({ symbol, setSymbol }: SymbolScreenProps) => {
   const insets = useSafeAreaInsets();
+  const networkState = useNetworkState();
+  const isOffline =
+    !networkState.isConnected || !networkState.isInternetReachable;
+
   const navigation = useNavigation<Navigation>();
   const { price, change24h, status, createAlarm } = useGeneratePrice(symbol);
 
@@ -160,6 +166,8 @@ const SymbolScreen = ({ symbol, setSymbol }: SymbolScreenProps) => {
 
       setLoadingApi(false);
     } catch (error: any) {
+      console.log("zaki", error);
+
       showModal(
         "Unable to Create Alarm",
         error.message ?? "Something went wrong. Please try again.",
@@ -217,7 +225,7 @@ const SymbolScreen = ({ symbol, setSymbol }: SymbolScreenProps) => {
           flexGrow: 1,
           paddingTop: insets.top + 10,
           paddingHorizontal: 20,
-          paddingBottom: insets.bottom + 60,
+          paddingBottom: insets.bottom + 90,
         }}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={true}
@@ -373,15 +381,26 @@ const SymbolScreen = ({ symbol, setSymbol }: SymbolScreenProps) => {
 
           {/* Set Alarm */}
           <TouchableOpacity
-            disabled={creating}
+            disabled={isOffline || creating}
             onPress={handleCreateAlarm}
             activeOpacity={0.8}
-            style={[styles.primaryButton, creating && styles.disabledButton]}
+            style={[
+              styles.primaryButton,
+              (isOffline || creating) && styles.disabledButton,
+            ]}
           >
-            <MaterialCommunityIcons name="bell" size={16} color="#FFFFFF" />
+            {isOffline ? (
+              <Feather name="wifi-off" size={16} color="#fff" />
+            ) : (
+              <MaterialCommunityIcons name="bell" size={16} color="#FFFFFF" />
+            )}
 
             <Text style={styles.primaryButtonText}>
-              {creating ? "Creating..." : "Set Alarm"}
+              {isOffline
+                ? "You're Offline"
+                : creating
+                  ? "Creating..."
+                  : "Set Alarm"}
             </Text>
           </TouchableOpacity>
         </View>

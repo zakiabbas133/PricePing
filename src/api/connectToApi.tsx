@@ -6,43 +6,43 @@ const ConnectToApi = (
   Platform: string,
   DeviceId: string,
 ) => {
-  // const apiBaseUrl = Constants.expoConfig?.extra?.apiBaseUrl; // LIVE
-  const apiBaseUrl = Constants.expoConfig?.extra?.localApiBaseUrl; // LOCAL
+  const apiBaseUrl = Constants.expoConfig?.extra?.apiBaseUrl;
   const xApiKey = Constants.expoConfig?.extra?.xApiKey;
 
-  const myHeaders = new Headers();
-  myHeaders.append("Content-Type", "application/json");
-  myHeaders.append("x-api-key", xApiKey);
+  if (!apiBaseUrl) {
+    throw new Error("API base URL is not configured.");
+  }
 
-  const raw = JSON.stringify({
+  const body = JSON.stringify({
     UserId,
     Token,
     Platform,
     DeviceId,
   });
 
-  const requestOptions: RequestInit = {
+  return fetch(`${apiBaseUrl}/api/PushToken/register`, {
     method: "POST",
-    headers: myHeaders,
-    body: raw,
-    redirect: "follow",
-  };
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": xApiKey ?? "",
+    },
+    body,
+  }).then(async (response) => {
+    const responseText = await response.text();
 
-  const res = fetch(
-    `${apiBaseUrl}/api/PushToken/register`,
-    requestOptions as RequestInit,
-  )
-    .then((response) => {
-      return response.json();
-    })
-    .then((result) => {
-      return result;
-    })
-    .catch((error) => {
+    if (!response.ok) {
+      return {
+        status: false,
+        message: "Unable to connect you to the app. Please restart the app.",
+      };
+    }
+
+    try {
+      return JSON.parse(responseText);
+    } catch (error) {
       return error;
-    });
-
-  return res;
+    }
+  });
 };
 
 export default ConnectToApi;

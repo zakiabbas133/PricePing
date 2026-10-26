@@ -15,7 +15,7 @@ function IOSPricePingTabs() {
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: "#2B77F1",
-        tabBarInactiveTintColor: "#626770"
+        tabBarInactiveTintColor: "#626770",
       }}
     >
       <NativeTab.Screen
@@ -70,11 +70,15 @@ function AndroidPricePingTabs() {
 }
 
 function PricePingTabs() {
-  return Platform.OS === "ios" ? (
-    <IOSPricePingTabs />
-  ) : (
-    <AndroidPricePingTabs />
-  );
+  if (Platform.OS === "ios") {
+    const iosVersion = parseInt(String(Platform.Version), 10);
+    console.log("iOS version:", iosVersion);
+    if (iosVersion < 25) {
+      return <IOSPricePingTabs />;
+    }
+  }
+
+  return <AndroidPricePingTabs />;
 }
 
 export default PricePingTabs;

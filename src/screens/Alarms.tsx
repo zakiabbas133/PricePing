@@ -8,6 +8,7 @@ import {
   View,
 } from "react-native";
 import { useDispatch, useSelector } from "react-redux";
+import { useNetworkState } from "expo-network";
 import { RootState } from "../store/store";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
@@ -24,6 +25,9 @@ import CustomApiLoader from "../components/CustomApiLoader";
 const Alarms = () => {
   const insets = useSafeAreaInsets();
   const dispatch = useDispatch();
+  const networkState = useNetworkState();
+  const isOffline =
+    !networkState.isConnected || !networkState.isInternetReachable;
   const userId = useSelector((state: RootState) => state.app.userId);
   const { deleteAlarm } = useGeneratePrice();
   const [loadingApi, setLoadingApi] = useState(false);
@@ -120,7 +124,6 @@ const Alarms = () => {
     // );
 
     // console.log('dispatched empty');
-    
   }, []);
 
   return (
@@ -134,7 +137,7 @@ const Alarms = () => {
           flexGrow: 1,
           paddingTop: insets.top + 10,
           paddingHorizontal: 20,
-          paddingBottom: insets.bottom + 70,
+          paddingBottom: insets.bottom + 90,
         }}
         refreshControl={
           <RefreshControl
@@ -207,6 +210,7 @@ const Alarms = () => {
                       <RenderAlarm
                         key={index}
                         alarm={alarm}
+                        isOffline={isOffline}
                         deleteAlarm={() => {
                           setLoadingApi(true);
                           deleteAlarm(alarm.id)

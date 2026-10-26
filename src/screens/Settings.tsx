@@ -19,9 +19,13 @@ import { appVolumeChangeOnDb } from "../api/appSettings";
 import Slider from "@react-native-community/slider";
 import useGeneratePrice from "../hooks/useGeneratePrice";
 import Constants from "expo-constants";
+import { useNetworkState } from "expo-network";
 
 const Settings = ({ navigation }: any) => {
   const userId = useSelector((state: RootState) => state.app.userId);
+  const networkState = useNetworkState();
+  const isOffline =
+    !networkState.isConnected || !networkState.isInternetReachable;
 
   const webSocketDocumentationUrl =
     "https://github.com/binance/binance-spot-api-docs/blob/master/web-socket-streams.md?utm_source=chatgpt.com#websocket-streams-for-binance";
@@ -65,7 +69,7 @@ const Settings = ({ navigation }: any) => {
           flexGrow: 1,
           paddingTop: insets.top + 10,
           paddingHorizontal: 20,
-          paddingBottom: insets.bottom + 80,
+          paddingBottom: insets.bottom + 90,
         }}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={true}
@@ -74,7 +78,8 @@ const Settings = ({ navigation }: any) => {
 
         <View style={styles.card}>
           <TouchableOpacity
-            style={styles.settingRow}
+            disabled={isOffline}
+            style={[styles.settingRow, { opacity: isOffline ? 0.3 : 1 }]}
             onPress={() => {
               navigation.navigate("AlarmSounds");
             }}
@@ -124,7 +129,8 @@ const Settings = ({ navigation }: any) => {
 
           <TouchableOpacity
             activeOpacity={1}
-            style={styles.settingRow}
+            disabled={isOffline}
+            style={[styles.settingRow, { opacity: isOffline ? 0.3 : 1 }]}
             onPress={() => setShowVolume(true)}
           >
             <View
@@ -225,6 +231,7 @@ const Settings = ({ navigation }: any) => {
               //   soundNotificationSettings.sound ? "#1677FF" : "#F4F4F5"
               // }
               // ios_backgroundColor="#AFC9FF"
+              disabled={isOffline}
               onValueChange={setAlarmSoundNotification}
               value={soundNotificationSettings.sound}
             />
@@ -254,6 +261,7 @@ const Settings = ({ navigation }: any) => {
               //   soundNotificationSettings.notifications ? "#1677FF" : "#F4F4F5"
               // }
               // ios_backgroundColor="#AFC9FF"
+              disabled={isOffline}
               onValueChange={setNotificationSoundNotification}
               value={soundNotificationSettings.notifications}
             />

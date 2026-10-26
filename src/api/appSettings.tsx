@@ -1,7 +1,6 @@
 import Constants from "expo-constants";
 
-// const apiBaseUrl = Constants.expoConfig?.extra?.apiBaseUrl; // LIVE
-const apiBaseUrl = Constants.expoConfig?.extra?.localApiBaseUrl; // LOCAL
+const apiBaseUrl = Constants.expoConfig?.extra?.apiBaseUrl;
 const xApiKey = Constants.expoConfig?.extra?.xApiKey;
 
 export const getAppSettings = (userId: string) => {};
@@ -27,13 +26,17 @@ export const updateAlarmSoundOnDb = async (userId: string, sound: any) => {
     const responseText = await response.text();
 
     if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${responseText}`);
+      return {
+        status: false,
+        message:
+          "Unable to connect retrieve your settings. Please restart the app or try again later.",
+      };
     }
 
     return JSON.parse(responseText);
   } catch (error) {
     console.error("updateUserAlarmSound error:", error);
-    throw error;
+    return error;
   }
 };
 

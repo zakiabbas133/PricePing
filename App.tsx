@@ -6,9 +6,11 @@ import { useFonts } from "expo-font";
 import { Provider } from "react-redux";
 import { PersistGate } from "redux-persist/integration/react";
 import { persistor, store } from "./src/store/store";
+import { configureRevenueCat } from "./src/components/InitializeRevenueCat";
 import AppSplashScreen from "./src/screens/SplashScreen";
 import PricePingStack from "./src/navigation/StackNavigator";
-import { configureRevenueCat } from "./src/components/InitializeRevenueCat";
+import CheckNetwork from "./src/components/CheckNetwork";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 
 export default function App() {
   const [loaded, error] = useFonts({
@@ -47,16 +49,16 @@ export default function App() {
   return (
     <Provider store={store}>
       <PersistGate loading={null} persistor={persistor}>
-        {/* <LinearGradient colors={['#bbb7b7', '#fff']}
-          style={styles.background}
-        /> */}
-        <View style={styles.container}>
-          <NavigationContainer>
-            <PricePingStack />
-          </NavigationContainer>
+        <SafeAreaProvider>
+          <View style={styles.container}>
+            <CheckNetwork />
+            <NavigationContainer>
+              <PricePingStack />
+            </NavigationContainer>
 
-          <StatusBar animated={true} style="dark" />
-        </View>
+            <StatusBar animated={true} style="dark" />
+          </View>
+        </SafeAreaProvider>
       </PersistGate>
     </Provider>
   );
