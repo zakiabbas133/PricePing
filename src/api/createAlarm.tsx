@@ -1,42 +1,33 @@
-import Constants from "expo-constants";
-import { PriceAlarmWidthoutId } from "../hooks/useGeneratePrice";
+import type {
+  PriceAlarm,
+  PriceAlarmWidthoutId,
+} from "../hooks/useGeneratePrice";
+import { requestApi } from "./requestApi";
 
-const createAlarmOnBackend = async (
+type CreateAlarmResponse = {
+  success?: boolean;
+  data?: PriceAlarm[];
+  alarmsCount?: number;
+  message?: string;
+};
+
+const createAlarmOnBackend = (
   alarm: PriceAlarmWidthoutId,
   userId: string,
-) => {
-  try {
-    const alarmToSend = {
+): Promise<CreateAlarmResponse> => {
+  if (!userId?.trim()) {
+    throw new Error(
+      "Your account isn't ready yet. Please close and reopen the app.",
+    );
+  }
+
+  return requestApi<CreateAlarmResponse>("/api/Notifications/generateAlarm", {
+    method: "POST",
+    body: JSON.stringify({
       ...alarm,
       userId,
-    };
-
-    const apiBaseUrl = Constants.expoConfig?.extra?.apiBaseUrl;
-    const xApiKey = Constants.expoConfig?.extra?.xApiKey;
-    
-    const response = await fetch(
-      `${apiBaseUrl}/api/Notifications/generateAlarm`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-api-key": xApiKey ?? "",
-        },
-        body: JSON.stringify(alarmToSend),
-      },
-    );
-
-    const responseText = await response.text();
-
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${responseText}`);
-    }
-
-    return JSON.parse(responseText);
-  } catch (error) {
-    console.error("createAlarmOnBackend error:", error);
-    throw error;
-  }
+    }),
+  });
 };
 
 export default createAlarmOnBackend;

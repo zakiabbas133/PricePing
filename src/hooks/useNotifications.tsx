@@ -37,6 +37,8 @@ export type ScheduledNotificationPayload = NotificationPayload & {
   seconds: number;
 };
 
+let tokenSyncPromise: Promise<string | null> | null = null;
+
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldPlaySound: true,
@@ -51,7 +53,6 @@ const useNotifications = () => {
   const dispatch = useDispatch();
   const pushTokenRef = useRef<string | null>(null);
   const tokenPromiseRef = useRef<Promise<string | null> | null>(null);
-  const tokenSyncPromiseRef = useRef<Promise<string | null> | null>(null);
   const [notification, setNotification] =
     useState<Notifications.Notification | null>(null);
   const [permissionGranted, setPermissionGranted] = useState(false);
@@ -133,8 +134,8 @@ const useNotifications = () => {
   }, [dispatch, requestPermissions]);
 
   const syncPushToken = useCallback(async () => {
-    if (tokenSyncPromiseRef.current) {
-      return tokenSyncPromiseRef.current;
+    if (tokenSyncPromise) {
+      return tokenSyncPromise;
     }
 
     const promise = (async () => {
@@ -149,6 +150,8 @@ const useNotifications = () => {
           return null;
         }
 
+        console.log(token);
+        
         const response = await ConnectToApi(
           token,
           token,
@@ -157,22 +160,29 @@ const useNotifications = () => {
         );
 
         if (!response?.success) {
-          throw new Error("Unable to synchronize push token.");
+          throw new Error(
+            response?.message ?? "Unable to synchronize push token.",
+          );
         }
+
+        
 
         const responseAppSettings = await createUserAppSettings(token);
 
-        if (responseAppSettings?.success) {
-          dispatch(
-            setNotificationsEnabled(
-              responseAppSettings.data?.playNotifications,
-            ),
-          );
-
-          dispatch(setSoundEnabled(responseAppSettings.data?.playAlarmSound));
-
-          dispatch(setVolume(responseAppSettings.data?.appVolume));
+        const appSettings = responseAppSettings.data;
+        if (
+          !appSettings ||
+          typeof appSettings.playNotifications !== "boolean" ||
+          typeof appSettings.playAlarmSound !== "boolean" ||
+          typeof appSettings.appVolume !== "number"
+        ) {
+          throw new Error("The server returned incomplete app settings.");
         }
+
+        dispatch(setNotificationsEnabled(appSettings.playNotifications));
+        dispatch(setSoundEnabled(appSettings.playAlarmSound));
+
+        dispatch(setVolume(appSettings.appVolume));
 
         dispatch(setUserId(token));
 
@@ -181,12 +191,10 @@ const useNotifications = () => {
         console.error("Push token synchronization error:", error);
 
         return null;
-      } finally {
-        tokenSyncPromiseRef.current = null;
       }
     })();
 
-    tokenSyncPromiseRef.current = promise;
+    tokenSyncPromise = promise;
 
     return promise;
   }, [dispatch, getPushToken]);
@@ -271,7 +279,7 @@ const useNotifications = () => {
       notificationListener.remove();
       responseListener.remove();
     };
-  }, [dispatch, initializeChannels, navigation, syncPushToken]);
+  }, []);
 
   return {
     notification,

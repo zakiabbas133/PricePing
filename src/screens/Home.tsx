@@ -10,14 +10,15 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { getApiErrorMessage } from "../api/requestApi";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useNetworkState } from "expo-network";
 import { LinearGradient } from "expo-linear-gradient";
 import { isTrialExpired } from "../components/CheckPaywallOptions";
-import { RootState } from "../store/store";
-import { useSelector } from "react-redux";
 import { useNavigation } from "@react-navigation/native";
+import { useSelector } from "react-redux";
 import { Navigation } from "../navigation/StackNavigator";
-import { useNetworkState } from "expo-network";
+import { RootState } from "../store/store";
 import { Feather } from "@expo/vector-icons";
 import AntDesign from "@expo/vector-icons/AntDesign";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
@@ -54,6 +55,10 @@ const SymbolScreen = ({ symbol, setSymbol }: SymbolScreenProps) => {
   const isPremium = useSelector(
     (state: RootState) => state.app.premiumUser?.isPremium,
   );
+  const isPremiumTesting = useSelector(
+    (state: RootState) => state.app.premiumUser,
+  );
+
   const alarmsCount = useSelector((state: RootState) => state.app.alarmsCount);
 
   const [targetInput, setTargetInput] = useState("");
@@ -90,13 +95,14 @@ const SymbolScreen = ({ symbol, setSymbol }: SymbolScreenProps) => {
   };
 
   const handleCreateAlarm = async () => {
-    // const expired = isTrialExpired(startingDate, alarmsCount, isPremium);
-    // if (expired) {
-    //   requestAnimationFrame(() => {
-    //     navigation.navigate("PresentPaywall");
-    //   });
-    //   return;
-    // }
+    console.log('alarmsCount, isPremium', alarmsCount, isPremium);
+    const expired = isTrialExpired(startingDate, alarmsCount, isPremium);
+    if (expired) {
+      requestAnimationFrame(() => {
+        navigation.navigate("PresentPaywall");
+      });
+      return;
+    }
 
     if (creating) return;
 
@@ -108,10 +114,7 @@ const SymbolScreen = ({ symbol, setSymbol }: SymbolScreenProps) => {
     if (!normalizedInput || !Number.isFinite(target) || target <= 0) {
       setPriceError(true);
 
-      showModal(
-        "Invalid Target Price",
-        "Please enter a valid target price greater than zero.",
-      );
+      showModal("Check Your Target Price", "Enter a price greater than zero.");
 
       return;
     }
@@ -119,8 +122,8 @@ const SymbolScreen = ({ symbol, setSymbol }: SymbolScreenProps) => {
     // Ensure the current market price is available.
     if (price == null || !Number.isFinite(price) || price <= 0) {
       showModal(
-        "Price Unavailable",
-        "Please wait until the current market price is available, then try again.",
+        "Price Not Ready",
+        "Wait for the current price to load, then try again.",
       );
 
       return;
@@ -131,8 +134,8 @@ const SymbolScreen = ({ symbol, setSymbol }: SymbolScreenProps) => {
       setPriceError(true);
 
       showModal(
-        "Invalid Target Price",
-        `The target price is below the current ${normalizedSymbol} price. Please raise your target.`,
+        "Check Your Target Price",
+        `Your target is below the current ${normalizedSymbol} price. Enter a higher price.`,
       );
 
       return;
@@ -143,8 +146,8 @@ const SymbolScreen = ({ symbol, setSymbol }: SymbolScreenProps) => {
       setPriceError(true);
 
       showModal(
-        "Invalid Target Price",
-        `The target price is above the current ${normalizedSymbol} price. Please lower your target.`,
+        "Check Your Target Price",
+        `Your target is above the current ${normalizedSymbol} price. Enter a lower price.`,
       );
 
       return;
@@ -159,18 +162,19 @@ const SymbolScreen = ({ symbol, setSymbol }: SymbolScreenProps) => {
       setPriceError(false);
 
       showModal(
-        "Alarm Created",
-        `${normalizedSymbol} alarm created successfully.`,
+        "Price Alert Set",
+        `Your alarm has been set. We'll let you know when ${normalizedSymbol} reaches your target price.`,
         "success",
       );
 
       setLoadingApi(false);
-    } catch (error: any) {
-      console.log("zaki", error);
-
+    } catch (error) {
       showModal(
-        "Unable to Create Alarm",
-        error.message ?? "Something went wrong. Please try again.",
+        "Couldn't Set Price Alert",
+        getApiErrorMessage(
+          error,
+          "We couldn't set your price alert. Please try again.",
+        ),
       );
       setLoadingApi(false);
     } finally {
@@ -276,7 +280,9 @@ const SymbolScreen = ({ symbol, setSymbol }: SymbolScreenProps) => {
             <Pressable
               onPress={() => {
                 setFutureOrSpot("future");
-                // navigation.navigate("PresentPaywall");
+                console.log('avsbdvasbd');
+                
+                navigation.navigate("PlayAlarm");
               }}
               style={[
                 styles.directionButton,

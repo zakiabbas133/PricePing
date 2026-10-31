@@ -11,7 +11,10 @@
       "googleServicesFile": "./GoogleService-Info.plist",
       "bundleIdentifier": "com.uzairjamal.priceping",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSAppTransportSecurity": {
+          "NSAllowsLocalNetworking": true
+        }
       }
     },
     "android": {

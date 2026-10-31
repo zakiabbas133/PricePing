@@ -27,15 +27,69 @@ const CustomDeleteModal = ({
   onConfirm,
   loading = false,
 }: CustomDeleteModalProps) => {
+  const modalContent = (
+    <View style={styles.modalContainer}>
+      <View style={styles.iconContainer}>
+        <MaterialCommunityIcons
+          name="trash-can-outline"
+          size={30}
+          color="#D92D20"
+        />
+      </View>
+      <Text style={styles.title}>{title}</Text>
+      <Text style={styles.message}>{message}</Text>
+      <View style={styles.buttonContainer}>
+        <Pressable
+          onPress={onCancel}
+          disabled={loading}
+          style={({ pressed }) => [
+            styles.cancelButton,
+            pressed && styles.pressedButton,
+          ]}
+        >
+          <Text style={styles.cancelButtonText}>Cancel</Text>
+        </Pressable>
+        <Pressable
+          onPress={onConfirm}
+          disabled={loading}
+          style={({ pressed }) => [
+            styles.deleteButton,
+            pressed && styles.pressedButton,
+            loading && styles.disabledButton,
+          ]}
+        >
+          {loading ? (
+            <ActivityIndicator size="small" color="#FFFFFF" />
+          ) : (
+            <>
+              <MaterialCommunityIcons
+                name="trash-can-outline"
+                size={17}
+                color="#FFFFFF"
+              />
+              <Text style={styles.deleteButtonText}>Delete</Text>
+            </>
+          )}
+        </Pressable>
+      </View>
+    </View>
+  );
+
   return (
     <Modal
       visible={visible}
       transparent
       animationType="fade"
       statusBarTranslucent
+      navigationBarTranslucent
+      presentationStyle="overFullScreen"
       onRequestClose={onCancel}
     >
-      {Platform.OS == "android" ? (
+      {Platform.OS === "ios" ? (
+        <BlurView intensity={20} style={styles.overlay}>
+          {modalContent}
+        </BlurView>
+      ) : (
         <View
           style={[
             styles.overlay,
@@ -44,116 +98,8 @@ const CustomDeleteModal = ({
             },
           ]}
         >
-          <View style={styles.modalContainer}>
-            {/* Icon */}
-            <View style={styles.iconContainer}>
-              <MaterialCommunityIcons
-                name="trash-can-outline"
-                size={30}
-                color="#D92D20"
-              />
-            </View>
-
-            {/* Title */}
-            <Text style={styles.title}>{title}</Text>
-
-            {/* Message */}
-            <Text style={styles.message}>{message}</Text>
-
-            {/* Actions */}
-            <View style={styles.buttonContainer}>
-              <Pressable
-                onPress={onCancel}
-                disabled={loading}
-                style={({ pressed }) => [
-                  styles.cancelButton,
-                  pressed && styles.pressedButton,
-                ]}
-              >
-                <Text style={styles.cancelButtonText}>Cancel</Text>
-              </Pressable>
-
-              <Pressable
-                onPress={onConfirm}
-                disabled={loading}
-                style={({ pressed }) => [
-                  styles.deleteButton,
-                  pressed && styles.pressedButton,
-                  loading && styles.disabledButton,
-                ]}
-              >
-                {loading ? (
-                  <ActivityIndicator size="small" color="#FFFFFF" />
-                ) : (
-                  <>
-                    <MaterialCommunityIcons
-                      name="trash-can-outline"
-                      size={17}
-                      color="#FFFFFF"
-                    />
-                    <Text style={styles.deleteButtonText}>Delete</Text>
-                  </>
-                )}
-              </Pressable>
-            </View>
-          </View>
+          {modalContent}
         </View>
-      ) : (
-        <BlurView intensity={20} style={styles.overlay}>
-          <View style={styles.modalContainer}>
-            {/* Icon */}
-            <View style={styles.iconContainer}>
-              <MaterialCommunityIcons
-                name="trash-can-outline"
-                size={30}
-                color="#D92D20"
-              />
-            </View>
-
-            {/* Title */}
-            <Text style={styles.title}>{title}</Text>
-
-            {/* Message */}
-            <Text style={styles.message}>{message}</Text>
-
-            {/* Actions */}
-            <View style={styles.buttonContainer}>
-              <Pressable
-                onPress={onCancel}
-                disabled={loading}
-                style={({ pressed }) => [
-                  styles.cancelButton,
-                  pressed && styles.pressedButton,
-                ]}
-              >
-                <Text style={styles.cancelButtonText}>Cancel</Text>
-              </Pressable>
-
-              <Pressable
-                onPress={onConfirm}
-                disabled={loading}
-                style={({ pressed }) => [
-                  styles.deleteButton,
-                  pressed && styles.pressedButton,
-                  loading && styles.disabledButton,
-                ]}
-              >
-                {loading ? (
-                  <ActivityIndicator size="small" color="#FFFFFF" />
-                ) : (
-                  <>
-                    <MaterialCommunityIcons
-                      name="trash-can-outline"
-                      size={17}
-                      color="#FFFFFF"
-                    />
-                    <Text style={styles.deleteButtonText}>Delete</Text>
-                  </>
-                )}
-              </Pressable>
-            </View>
-          </View>
-        </BlurView>
       )}
     </Modal>
   );
@@ -164,7 +110,6 @@ export default CustomDeleteModal;
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    // backgroundColor: "rgba(16, 24, 40, 0.55)",
     justifyContent: "center",
     alignItems: "center",
     paddingHorizontal: 24,

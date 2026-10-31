@@ -77,8 +77,8 @@ const RenderAlarm = ({
 
   const openDeleteAlarmModal = () => {
     showModal(
-      "Delete Alarm",
-      "Are you sure you want to delete the alarm?",
+      "Delete Price Alert",
+      "Are you sure you want to remove this price alert?",
       "success",
     );
   };

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import {
+  Alert,
   Linking,
   Platform,
   ScrollView,
@@ -20,6 +21,7 @@ import Slider from "@react-native-community/slider";
 import useGeneratePrice from "../hooks/useGeneratePrice";
 import Constants from "expo-constants";
 import { useNetworkState } from "expo-network";
+import { getApiErrorMessage } from "../api/requestApi";
 
 const Settings = ({ navigation }: any) => {
   const userId = useSelector((state: RootState) => state.app.userId);
@@ -52,9 +54,27 @@ const Settings = ({ navigation }: any) => {
   };
 
   const changeAppVolumeOnBackend = async (vol: number) => {
-    const res = await appVolumeChangeOnDb(vol, userId ?? "");
-    if (res?.success) {
-      dispatch(setVolume(res?.data?.appVolume));
+    try {
+      const res = await appVolumeChangeOnDb(vol, userId ?? "");
+      const updatedVolume = res.data?.appVolume;
+
+      if (
+        !res.success ||
+        typeof updatedVolume !== "number" ||
+        !Number.isFinite(updatedVolume)
+      ) {
+        throw new Error("We couldn't save your volume setting. Please try again.");
+      }
+
+      dispatch(setVolume(updatedVolume));
+    } catch (error) {
+      Alert.alert(
+        "Couldn't Save Volume",
+        getApiErrorMessage(
+          error,
+          "We couldn't save your volume setting. Please try again.",
+        ),
+      );
     }
   };
 
@@ -197,7 +217,7 @@ const Settings = ({ navigation }: any) => {
                     thumbTintColor="#2B77F1"
                     value={appVolume}
                     onSlidingComplete={(val) => {
-                      changeAppVolumeOnBackend(val);
+                      void changeAppVolumeOnBackend(val);
                       setShowVolume(false);
                     }}
                     step={0.01}

@@ -72,8 +72,8 @@ function AndroidPricePingTabs() {
 function PricePingTabs() {
   if (Platform.OS === "ios") {
     const iosVersion = parseInt(String(Platform.Version), 10);
-    console.log("iOS version:", iosVersion);
-    if (iosVersion < 25) {
+    // console.log("iosVersion:", iosVersion);
+    if (iosVersion >= 26) {
       return <IOSPricePingTabs />;
     }
   }

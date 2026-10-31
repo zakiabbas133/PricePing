@@ -1,47 +1,37 @@
-import Constants from "expo-constants";
+import { requestApi } from "./requestApi";
+
+type PushTokenRegistrationResponse = {
+  success?: boolean;
+  message?: string;
+  data?: unknown;
+};
 
 const ConnectToApi = (
   UserId: string,
   Token: string,
   Platform: string,
   DeviceId: string,
-) => {
-  const apiBaseUrl = Constants.expoConfig?.extra?.apiBaseUrl;
-  const xApiKey = Constants.expoConfig?.extra?.xApiKey;
-
-  if (!apiBaseUrl) {
-    throw new Error("API base URL is not configured.");
+): Promise<PushTokenRegistrationResponse> => {
+  if (!UserId?.trim()) {
+    throw new Error(
+      "Your account isn't ready yet. Please close and reopen the app.",
+    );
   }
 
-  const body = JSON.stringify({
-    UserId,
-    Token,
-    Platform,
-    DeviceId,
-  });
+  if (!Token?.trim()) {
+    throw new Error(
+      "Notifications aren't ready yet. Allow notifications and try again.",
+    );
+  }
 
-  return fetch(`${apiBaseUrl}/api/PushToken/register`, {
+  return requestApi<PushTokenRegistrationResponse>("/api/PushToken/register", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-api-key": xApiKey ?? "",
-    },
-    body,
-  }).then(async (response) => {
-    const responseText = await response.text();
-
-    if (!response.ok) {
-      return {
-        status: false,
-        message: "Unable to connect you to the app. Please restart the app.",
-      };
-    }
-
-    try {
-      return JSON.parse(responseText);
-    } catch (error) {
-      return error;
-    }
+    body: JSON.stringify({
+      UserId,
+      Token,
+      Platform,
+      DeviceId,
+    }),
   });
 };
 

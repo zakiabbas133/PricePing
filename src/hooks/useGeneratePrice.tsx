@@ -91,7 +91,7 @@ const useGeneratePrice = (initialCurreny = "BTCUSDT") => {
       );
 
       if (!response.ok) {
-        throw new Error(`Failed to fetch 24h change: ${response.status}`);
+        throw new Error("The latest price change isn't available right now.");
       }
 
       const data = await response.json();
@@ -137,10 +137,19 @@ const useGeneratePrice = (initialCurreny = "BTCUSDT") => {
     async (alarmId: number) => {
       const res = await deleteAlarmFromDb(alarmId);
 
-      if (res.success) {
-        dispatch(setAlarms(res.data));
+      if (!res.success) {
+        throw new Error(
+          res.message ??
+            "We couldn't delete this price alert. Please try again.",
+        );
+      }
+      if (!Array.isArray(res.data)) {
+        throw new Error(
+          "We couldn't refresh your price alerts. Please try again.",
+        );
       }
 
+      dispatch(setAlarms(res.data));
       return res;
     },
     [dispatch],
@@ -186,7 +195,7 @@ const useGeneratePrice = (initialCurreny = "BTCUSDT") => {
         const streamSymbol = symbolRef.current.toLowerCase();
 
         const ws = new WebSocket(
-          `wss://fstream.binance.com/ws/${streamSymbol}@trade`,
+          `wss://stream.binance.com/ws/${streamSymbol}@trade`,
         );
 
         socketRef.current = ws;
@@ -197,7 +206,6 @@ const useGeneratePrice = (initialCurreny = "BTCUSDT") => {
           }
 
           reconnectAttemptsRef.current = 0;
-
           setStatus("connected");
         };
 
@@ -207,7 +215,7 @@ const useGeneratePrice = (initialCurreny = "BTCUSDT") => {
 
             const currentPrice = Number(trade.p);
 
-            if (!Number.isFinite(currentPrice) || currentPrice === 0) {
+            if (!Number.isFinite(currentPrice) || currentPrice <= 0) {
               return;
             }
 
@@ -216,7 +224,6 @@ const useGeneratePrice = (initialCurreny = "BTCUSDT") => {
             }
 
             priceRef.current = currentPrice;
-
             setPrice(currentPrice);
           } catch (error) {
             console.error("Binance WebSocket parse error:", error);
@@ -265,21 +272,25 @@ const useGeneratePrice = (initialCurreny = "BTCUSDT") => {
       const normalizedTarget = Number(target);
 
       if (!normalizedSymbol) {
-        throw new Error("Invalid symbol.");
+        throw new Error("Choose a valid cryptocurrency and try again.");
       }
 
       if (!Number.isFinite(normalizedTarget) || normalizedTarget <= 0) {
-        throw new Error("Invalid target price.");
+        throw new Error("Enter a target price greater than zero.");
       }
 
       if (direction !== "above" && direction !== "below") {
-        throw new Error("Invalid alarm direction.");
+        throw new Error(
+          "Choose whether the alert should be above or below your target price.",
+        );
       }
 
       const pushToken = await getPushToken();
 
       if (!pushToken) {
-        throw new Error("Unable to obtain Expo push token.");
+        throw new Error(
+          "Notifications aren't ready yet. Allow notifications and try again.",
+        );
       }
 
       /**
@@ -329,12 +340,26 @@ const useGeneratePrice = (initialCurreny = "BTCUSDT") => {
        * Now:
        * createAlarmOnBackend(alarmToSend, pushToken)
        */
-      const res = await createAlarmOnBackend(alarmToSend, pushToken as string);
+      const res = await createAlarmOnBackend(alarmToSend, pushToken);
 
-      if (res.success) {
-        dispatch(setAlarms(res.data));
-        dispatch(setUserAlarmsCount(res.alarmsCount));
+      if (!res.success) {
+        throw new Error(
+          res.message ??
+            "We couldn't create your price alert. Please try again.",
+        );
       }
+      if (
+        !Array.isArray(res.data) ||
+        typeof res.alarmsCount !== "number" ||
+        !Number.isFinite(res.alarmsCount)
+      ) {
+        throw new Error(
+          "We couldn't confirm your price alert. Refresh your alerts to check.",
+        );
+      }
+
+      dispatch(setAlarms(res.data));
+      dispatch(setUserAlarmsCount(res.alarmsCount));
 
       /**
        * Keep track of the initial price locally.

@@ -1,33 +1,25 @@
-import Constants from "expo-constants";
-const deleteAlarmFromDb = async (id: number) => {
-  try {
-    const apiBaseUrl = Constants.expoConfig?.extra?.apiBaseUrl;
-    const xApiKey = Constants.expoConfig?.extra?.xApiKey;
+import type { PriceAlarm } from "../hooks/useGeneratePrice";
+import { requestApi } from "./requestApi";
 
-    const response = await fetch(
-      `${apiBaseUrl}/api/Notifications/deleteAlarm?id=${id}`,
-      {
-        method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-          "x-api-key": xApiKey ?? "",
-        },
-      },
+type DeleteAlarmResponse = {
+  success?: boolean;
+  data?: PriceAlarm[];
+  message?: string;
+};
+
+const deleteAlarmFromDb = (id: number): Promise<DeleteAlarmResponse> => {
+  if (!Number.isFinite(id) || id <= 0) {
+    throw new Error(
+      "We couldn't find that price alert. Refresh the list and try again.",
     );
-    const responseText = await response.text();
-
-    if (!response.ok) {
-      return {
-        status: false,
-        message: "Unable to delete alarm. Please try again later.",
-      };
-    }
-
-    return JSON.parse(responseText);
-  } catch (error) {
-    console.error("delete alarm error:", error);
-    return error;
   }
+
+  return requestApi<DeleteAlarmResponse>(
+    `/api/Notifications/deleteAlarm?id=${encodeURIComponent(id)}`,
+    {
+      method: "DELETE",
+    },
+  );
 };
 
 export default deleteAlarmFromDb;

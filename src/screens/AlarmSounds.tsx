@@ -21,6 +21,7 @@ import {
 import type { AppDispatch, RootState } from "../store/store";
 import CustomApiLoader from "../components/CustomApiLoader";
 import CustomModal from "../components/CustomModal";
+import { getApiErrorMessage } from "../api/requestApi";
 
 export type SoundItem = {
   id: string;
@@ -113,15 +114,33 @@ const AlarmSounds = ({ navigation }: any) => {
   const status = useAudioPlayerStatus(player);
   player.volume = volume;
 
-  const updateAlarmSound = async (userId: any, sound: any) => {
+  const updateAlarmSound = async (
+    userId: string | null,
+    sound: string,
+  ) => {
     setLoadingApi(true);
-    const userIdToSend = await userId;
-    const res = await updateAlarmSoundOnDb(userIdToSend, sound);
-    if (res.success) {
-      showModal("Alarm Sound", "Alarm sound updated successfully.", "success");
+    try {
+      if (!userId) {
+        throw new Error(
+          "Your account isn't ready yet. Please close and reopen the app.",
+        );
+      }
+
+      const res = await updateAlarmSoundOnDb(userId, sound);
+      if (!res.success) {
+        throw new Error(
+          res.message ?? "We couldn't save your alarm sound. Please try again.",
+        );
+      }
+
+      showModal(
+        "Alarm Sound Saved",
+        "Your new alarm sound is ready to use.",
+        "success",
+      );
       dispatch(
         setSelectedSound({
-          id: res.data.alarmSound,
+          id: res.data?.alarmSound ?? sound,
           soundName:
             SOUNDS.find((x) => x.id == userSelectedSound)?.name || "Alarm 1",
           fileName:
@@ -129,10 +148,18 @@ const AlarmSounds = ({ navigation }: any) => {
           fileFullName: `${SOUNDS.find((x) => x.id == userSelectedSound)?.id}.mp3`,
         }),
       );
-    } else {
-      showModal("Alarm Sound", "Unable to update alarm sound.", "error");
+    } catch (error) {
+      showModal(
+        "Couldn't Save Alarm Sound",
+        getApiErrorMessage(
+          error,
+          "We couldn't save your alarm sound. Please try again.",
+        ),
+        "error",
+      );
+    } finally {
+      setLoadingApi(false);
     }
-    setLoadingApi(false);
   };
 
   const showModal = (
@@ -393,7 +420,10 @@ const AlarmSounds = ({ navigation }: any) => {
       />
 
       <TouchableOpacity
-        onPress={() => updateAlarmSound(userId, userSelectedSound)}
+        disabled={loadingApi}
+        onPress={() => {
+          void updateAlarmSound(userId, userSelectedSound);
+        }}
         style={{
           backgroundColor: "#2B77F1",
           paddingVertical: 10,

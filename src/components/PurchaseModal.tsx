@@ -1,6 +1,13 @@
-import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
-import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
+import {
+  Modal,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 
 const PurchaseModal = ({
   setPurchaseModal,
@@ -15,75 +22,76 @@ const PurchaseModal = ({
   };
   onPurchaseModalClose: () => void;
 }) => {
+  const status = purchaseMessage?.successWarnOrError;
+
+  const statusColor =
+    status === 1 ? "#16A34A" : status === 2 ? "#CFBD19" : "#D61D2D";
+
+  const iconName =
+    status === 1
+      ? "checkmark"
+      : status === 2
+        ? "warning-outline"
+        : "close-circle-outline";
+
+  const handleClose = () => {
+    setPurchaseModal(false);
+    onPurchaseModalClose();
+  };
+
+  const modalContent = (
+    <>
+      <Pressable
+        style={StyleSheet.absoluteFill}
+        onPress={() => setPurchaseModal(false)}
+      />
+      <View style={styles.card}>
+        <View style={[styles.iconContainer, { backgroundColor: statusColor }]}>
+          <Ionicons name={iconName} size={32} color="#FFFFFF" />
+        </View>
+        <Text style={styles.title}>{purchaseMessage?.title}</Text>
+        <Text style={styles.message}>{purchaseMessage?.message}</Text>
+        <View style={styles.buttonContainer}>
+          <Pressable
+            onPress={handleClose}
+            style={({ pressed }) => [
+              styles.button,
+              styles.confirmButton,
+              { backgroundColor: statusColor },
+              pressed && styles.pressed,
+            ]}
+          >
+            <Text style={styles.confirmText}>Okay</Text>
+          </Pressable>
+        </View>
+      </View>
+    </>
+  );
+
   return (
     <Modal
       visible={true}
       transparent
       animationType="fade"
+      statusBarTranslucent
+      navigationBarTranslucent
+      presentationStyle="overFullScreen"
       onRequestClose={() => setPurchaseModal(false)}
     >
-      <BlurView intensity={20} style={styles.overlay}>
-        <Pressable
-          style={StyleSheet.absoluteFill}
-          onPress={() => setPurchaseModal(false)}
-        />
-
-        <View style={[styles.card]}>
-          <View
-            style={[
-              styles.iconContainer,
-              {
-                backgroundColor:
-                  purchaseMessage?.successWarnOrError == 1
-                    ? "#16A34A"
-                    : purchaseMessage?.successWarnOrError == 2
-                      ? "#cfbd19"
-                      : "#d61d2d",
-              },
-            ]}
-          >
-            <Ionicons
-              name={
-                purchaseMessage?.successWarnOrError == 1
-                  ? "checkmark"
-                  : purchaseMessage?.successWarnOrError == 2
-                    ? "warning-outline"
-                    : "close-circle-outline"
-              }
-              size={32}
-              color={"#fff"}
-            />
-          </View>
-
-          <Text style={styles.title}>{purchaseMessage?.title}</Text>
-
-          <Text style={styles.message}>{purchaseMessage?.message}</Text>
-
-          <View style={styles.buttonContainer}>
-            <Pressable
-              onPress={() => {
-                setPurchaseModal(false);
-                onPurchaseModalClose();
-              }}
-              style={({ pressed }) => [
-                styles.button,
-                styles.confirmButton,
-                {
-                  backgroundColor:
-                    purchaseMessage?.successWarnOrError == 1
-                      ? "#16A34A"
-                      : purchaseMessage?.successWarnOrError == 2
-                        ? "#cfbd19"
-                        : "#d61d2d",
-                },
-                pressed && styles.pressed,
-              ]}
-            >
-              <Text style={styles.confirmText}>Okay</Text>
-            </Pressable>
-          </View>
+      {Platform.OS === "ios" ? (
+        <BlurView intensity={20} style={styles.overlay}>
+          {modalContent}
+        </BlurView>
+      ) : (
+        <View
+          style={[
+            styles.overlay,
+            { backgroundColor: "rgba(15, 23, 42, 0.55)" },
+          ]}
+        >
+          {modalContent}
         </View>
-      </BlurView>
+      )}
     </Modal>
   );
 };
@@ -93,15 +101,15 @@ export default PurchaseModal;
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    // backgroundColor: "rgba(15, 23, 42, 0.55)",
     justifyContent: "center",
     alignItems: "center",
     paddingHorizontal: 24,
   },
+
   card: {
     width: "100%",
     maxWidth: 380,
-    backgroundColor: "#ffffff",
+    backgroundColor: "#FFFFFF",
     borderRadius: 24,
     paddingHorizontal: 24,
     paddingTop: 30,
@@ -113,6 +121,7 @@ const styles = StyleSheet.create({
     shadowRadius: 24,
     elevation: 12,
   },
+
   iconContainer: {
     width: 68,
     height: 68,
@@ -121,6 +130,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     marginBottom: 20,
   },
+
   title: {
     fontSize: 21,
     color: "#101828",
@@ -128,6 +138,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginBottom: 10,
   },
+
   message: {
     fontSize: 15,
     lineHeight: 23,
@@ -136,12 +147,14 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginBottom: 26,
   },
+
   buttonContainer: {
     flexDirection: "row",
     width: "100%",
     gap: 12,
     marginTop: 8,
   },
+
   button: {
     flex: 1,
     minHeight: 48,
@@ -150,24 +163,17 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 12,
   },
-  cancelButton: {
-    backgroundColor: "#F2F4F7",
-    borderWidth: 1,
-    borderColor: "#EAECF0",
-  },
+
   confirmButton: {
     backgroundColor: "#1677FF",
   },
-  cancelText: {
-    fontSize: 15,
-    color: "#344054",
-    fontFamily: "Outfit-SemiBold",
-  },
+
   confirmText: {
     fontSize: 15,
     color: "#FFFFFF",
     fontFamily: "Outfit-SemiBold",
   },
+
   pressed: {
     opacity: 0.8,
   },

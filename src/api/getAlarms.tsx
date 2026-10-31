@@ -1,37 +1,22 @@
-import Constants from "expo-constants";
-const getAlarms = async (userId: string) => {
-  try {
-    if (!userId) {
-      console.warn("Cannot fetch alarms: userId is missing.");
-      return;
-    }
-    const apiBaseUrl = Constants.expoConfig?.extra?.apiBaseUrl;
-    const xApiKey = Constants.expoConfig?.extra?.xApiKey;
+import type { PriceAlarm } from "../hooks/useGeneratePrice";
+import { requestApi } from "./requestApi";
 
-    const response = await fetch(
-      `${apiBaseUrl}/api/Notifications/getAlarms?userId=${userId}`,
-      {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          "x-api-key": xApiKey ?? "",
-        },
-      },
+type GetAlarmsResponse = {
+  success?: boolean;
+  data?: PriceAlarm[];
+  message?: string;
+};
+
+const getAlarms = (userId: string): Promise<GetAlarmsResponse> => {
+  if (!userId?.trim()) {
+    throw new Error(
+      "Your account isn't ready yet. Please close and reopen the app.",
     );
-    const responseText = await response.text();
-
-    if (!response.ok) {
-      return {
-        status: false,
-        message: "Unable to retrive alarms. Please try again later.",
-      };
-    }
-
-    return JSON.parse(responseText);
-  } catch (error) {
-    console.error("get alarms error:", error);
-    return error;
   }
+
+  return requestApi<GetAlarmsResponse>(
+    `/api/Notifications/getAlarms?userId=${encodeURIComponent(userId)}`,
+  );
 };
 
 export default getAlarms;

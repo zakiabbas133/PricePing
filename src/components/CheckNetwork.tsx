@@ -5,17 +5,14 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 
 const CheckNetwork = () => {
-  const networkState = useNetworkState();
   const insets = useSafeAreaInsets();
-
+  const networkState = useNetworkState();
   const isOffline =
     !networkState.isConnected || !networkState.isInternetReachable;
 
-  const [bannerHeight, setBannerHeight] = useState(100);
-
   const translateY = useRef(new Animated.Value(-100)).current;
-
   const opacity = useRef(new Animated.Value(0)).current;
+  const [bannerHeight, setBannerHeight] = useState(100);
 
   useEffect(() => {
     Animated.parallel([

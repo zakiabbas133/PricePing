@@ -12,9 +12,10 @@ import { useNetworkState } from "expo-network";
 import { RootState } from "../store/store";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { setAlarms, setIsUserPremium } from "../store/appSlice";
+import { setAlarms, setIsUserPremium, setUserAlarmsCount } from "../store/appSlice";
 import { ModalContent, ModalType } from "./Home";
 import { LinearGradient } from "expo-linear-gradient";
+import { getApiErrorMessage } from "../api/requestApi";
 import RenderAlarm from "../components/RenderAlarm";
 import useGeneratePrice from "../hooks/useGeneratePrice";
 import getAlarms from "../api/getAlarms";
@@ -44,41 +45,70 @@ const Alarms = () => {
   const pastAlarms = persistedAlarms.filter((x) => x.triggered == true);
   const activeAlarms = persistedAlarms.filter((x) => x.triggered == false);
 
-  const showModal = (
-    title: string,
-    description: string,
-    type: ModalType = "error",
-  ) => {
-    setModalContent({ title, description, type });
-    setModalVisible(true);
-  };
+  const showModal = useCallback(
+    (title: string, description: string, type: ModalType = "error") => {
+      setModalContent({ title, description, type });
+      setModalVisible(true);
+    },
+    [],
+  );
 
-  const alarmsOnBackend = async () => {
-    try {
-      const res = await getAlarms(userId || "");
+  const alarmsOnBackend = useCallback(async () => {
+    const res = await getAlarms(userId ?? "");
 
-      if (res.success) {
-        dispatch(setAlarms(res.data));
-      }
-    } catch (error) {
-      console.error(error);
+    if (!res.success) {
+      throw new Error(
+        res.message ?? "We couldn't load your price alerts. Please try again.",
+      );
     }
-  };
+    if (!Array.isArray(res.data)) {
+      throw new Error("We couldn't load your price alerts. Please try again.");
+    }
 
-  const onRefresh = useCallback(() => {
+    dispatch(setAlarms(res.data));
+  }, [dispatch, userId]);
+
+  const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    alarmsOnBackend()
-      .then(() => {
-        setRefreshing(false);
-      })
-      .catch((err) => {
-        console.error(err);
-        setRefreshing(false);
-      })
-      .finally(() => {
-        setRefreshing(false);
-      });
-  }, []);
+    try {
+      await alarmsOnBackend();
+    } catch (error) {
+      showModal(
+        "Couldn't Load Price Alerts",
+        getApiErrorMessage(
+          error,
+          "We couldn't load your price alerts. Please try again.",
+        ),
+      );
+    } finally {
+      setRefreshing(false);
+    }
+  }, [alarmsOnBackend, showModal]);
+
+  const handleDeleteAlarm = useCallback(
+    async (alarmId: number) => {
+      setLoadingApi(true);
+      try {
+        await deleteAlarm(alarmId);
+        showModal(
+          "Price Alert Deleted",
+          "The alert has been removed.",
+          "success",
+        );
+      } catch (error) {
+        showModal(
+          "Couldn't Delete Price Alert",
+          getApiErrorMessage(
+            error,
+            "We couldn't delete this alert. Please try again.",
+          ),
+        );
+      } finally {
+        setLoadingApi(false);
+      }
+    },
+    [deleteAlarm, showModal],
+  );
 
   const EmptyAlarmState = ({ type }: { type: "active" | "past" }) => {
     const isActive = type === "active";
@@ -112,19 +142,32 @@ const Alarms = () => {
   };
 
   useEffect(() => {
-    alarmsOnBackend();
+    if (!userId) {
+      return;
+    }
 
-    // dispatch(
-    //   setIsUserPremium({
-    //     trialStartedAt: new Date().toISOString(),
-    //     alarmsCreatedCount: 0,
-    //     isPremium: false,
-    //     paywallVisible: false,
-    //   }),
-    // );
+    alarmsOnBackend().catch((error: unknown) => {
+      showModal(
+        "Couldn't Load Price Alerts",
+        getApiErrorMessage(
+          error,
+          "We couldn't load your price alerts. Please try again.",
+        ),
+      );
+    });
+  }, [alarmsOnBackend, showModal, userId]);
 
-    // console.log('dispatched empty');
-  }, []);
+  // useEffect(() => {
+  //   dispatch(
+  //     setIsUserPremium({
+  //       trialStartedAt: new Date().toISOString(),
+  //       alarmsCreatedCount: 0,
+  //       isPremium: false,
+  //       paywallVisible: false,
+  //     }),
+  //   );
+  //   dispatch(setUserAlarmsCount(0));
+  // }, []);
 
   return (
     <View style={styles.safeArea}>
@@ -212,26 +255,7 @@ const Alarms = () => {
                         alarm={alarm}
                         isOffline={isOffline}
                         deleteAlarm={() => {
-                          setLoadingApi(true);
-                          deleteAlarm(alarm.id)
-                            .then((data) => {
-                              setLoadingApi(false);
-                              if (data.success) {
-                                showModal(
-                                  "Delete Alarm",
-                                  "Alarm deleted successfully.",
-                                  "success",
-                                );
-                              }
-                            })
-                            .catch(() => {
-                              setLoadingApi(false);
-                              showModal(
-                                "Delete Alarm",
-                                "Unable to delete Alarm.",
-                                "error",
-                              );
-                            });
+                          void handleDeleteAlarm(alarm.id);
                         }}
                       />
                     );

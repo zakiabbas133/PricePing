@@ -1,93 +1,77 @@
-import Constants from "expo-constants";
+import { requestApi } from "./requestApi";
 
-const apiBaseUrl = Constants.expoConfig?.extra?.apiBaseUrl;
-const xApiKey = Constants.expoConfig?.extra?.xApiKey;
+type ApiResponse<T> = {
+  success?: boolean;
+  data?: T;
+  message?: string;
+};
 
-export const getAppSettings = (userId: string) => {};
+type UserAppSettings = {
+  playNotifications?: boolean;
+  playAlarmSound?: boolean;
+  appVolume?: number;
+};
 
-export const updateAlarmSoundOnDb = async (userId: string, sound: any) => {
-  try {
-    const raw = JSON.stringify({
-      AlarmSound: sound,
-    });
+type AlarmSoundResponse = {
+  alarmSound?: string;
+};
 
-    const response = await fetch(
-      `${apiBaseUrl}/api/AppSettings/updateUserAlarmSound?userId=${userId}`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-api-key": xApiKey ?? "",
-        },
-        body: raw,
-      },
+type AppVolumeResponse = {
+  appVolume?: number;
+};
+
+const validateUserId = (userId: string) => {
+  if (!userId?.trim()) {
+    throw new Error(
+      "Your account isn't ready yet. Please close and reopen the app.",
     );
-
-    const responseText = await response.text();
-
-    if (!response.ok) {
-      return {
-        status: false,
-        message:
-          "Unable to connect retrieve your settings. Please restart the app or try again later.",
-      };
-    }
-
-    return JSON.parse(responseText);
-  } catch (error) {
-    console.error("updateUserAlarmSound error:", error);
-    return error;
   }
 };
 
-export const createUserAppSettings = async (userId: string) => {
-  try {
-    const response = await fetch(
-      `${apiBaseUrl}/api/AppSettings/createUserSettings?userId=${userId}`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-api-key": xApiKey ?? "",
-        },
-      },
-    );
+export const createUserAppSettings = (
+  userId: string,
+): Promise<ApiResponse<UserAppSettings>> => {
+  validateUserId(userId);
 
-    const responseText = await response.text();
-
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${responseText}`);
-    }
-
-    return JSON.parse(responseText);
-  } catch (error) {
-    console.error("createUserSettings error:", error);
-    throw error;
-  }
+  return requestApi<ApiResponse<UserAppSettings>>(
+    `/api/AppSettings/createUserSettings?userId=${encodeURIComponent(userId)}`,
+    {
+      method: "POST",
+    },
+  );
 };
 
-export const appVolumeChangeOnDb = async (vol: number, userId: string) => {
-  try {
-    const response = await fetch(
-      `${apiBaseUrl}/api/AppSettings/changeAppVolume?userId=${userId}&volume=${vol}`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-api-key": xApiKey ?? "",
-        },
-      },
-    );
+export const updateAlarmSoundOnDb = (
+  userId: string,
+  sound: string,
+): Promise<ApiResponse<AlarmSoundResponse>> => {
+  validateUserId(userId);
 
-    const responseText = await response.text();
+  return requestApi<ApiResponse<AlarmSoundResponse>>(
+    `/api/AppSettings/updateUserAlarmSound?userId=${encodeURIComponent(userId)}`,
+    {
+      method: "POST",
+      body: JSON.stringify({
+        AlarmSound: sound,
+      }),
+    },
+  );
+};
 
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${responseText}`);
-    }
+export const appVolumeChangeOnDb = (
+  vol: number,
+  userId: string,
+): Promise<ApiResponse<AppVolumeResponse>> => {
+  validateUserId(userId);
 
-    return JSON.parse(responseText);
-  } catch (error) {
-    console.error("createUserSettings error:", error);
-    throw error;
+  if (!Number.isFinite(vol) || vol < 0 || vol > 1) {
+    throw new Error("Choose a volume between muted and maximum.");
   }
+
+  return requestApi<ApiResponse<AppVolumeResponse>>(
+    `/api/AppSettings/changeAppVolume?userId=${encodeURIComponent(userId)}&volume=${encodeURIComponent(vol)}`,
+    {
+      method: "POST",
+    },
+  );
 };

@@ -9,7 +9,10 @@ import {
   View,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { PACKAGE_TYPE, type PurchasesPackage } from "react-native-purchases";
+import Purchases, {
+  PACKAGE_TYPE,
+  type PurchasesPackage,
+} from "react-native-purchases";
 import { useNavigation } from "@react-navigation/native";
 import { useDispatch, useSelector } from "react-redux";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -25,6 +28,7 @@ import { setIsUserPremium } from "../store/appSlice";
 import { RootState } from "../store/store";
 import PurchaseModal from "../components/PurchaseModal";
 import { AntDesign } from "@expo/vector-icons";
+import LottieView from "lottie-react-native";
 
 const BLUE = "#2B77F1";
 const BLUE_DARK = "#175CD3";
@@ -54,7 +58,6 @@ export default function PaywallScreen() {
   const [loading, setLoading] = useState(true);
   const [purchasing, setPurchasing] = useState(false);
   const [restoring, setRestoring] = useState(false);
-  const [errorMessage, setErrorMessage] = useState("");
   const [showPurchasedModal, setShowPurchaseModal] = useState(false);
 
   const [purchaseMessage, setPurchaseMessage] = useState<PurchaseMessage>({
@@ -65,29 +68,20 @@ export default function PaywallScreen() {
 
   const loadPackages = useCallback(async () => {
     setLoading(true);
-    setErrorMessage("");
 
     try {
       const result = await getSubscriptionPackages();
-
       setPackages(result);
 
-      // Prefer annual, then monthly, then the first available package.
       setSelectedPlan(
         result.find((pkg) => pkg.packageType === PACKAGE_TYPE.ANNUAL) ??
           result.find((pkg) => pkg.packageType === PACKAGE_TYPE.MONTHLY) ??
           result[0] ??
           null,
       );
-    } catch (error) {
+    } catch {
       setPackages([]);
       setSelectedPlan(null);
-
-      setErrorMessage(
-        error instanceof Error
-          ? error.message
-          : "Unable to load subscription plans. Please try again.",
-      );
     } finally {
       setLoading(false);
     }
@@ -138,33 +132,40 @@ export default function PaywallScreen() {
     if (purchasing || loading) return;
 
     if (!selectedPlan) {
-      setErrorMessage("Please select a subscription plan first.");
       return;
     }
 
     setPurchasing(true);
-    setErrorMessage("");
 
     try {
       const customerInfo = await purchaseSubscription(selectedPlan);
+      let isPremiumActive =
+        customerInfo?.entitlements?.active?.price_ping_pro?.isActive === true;
 
-      if (hasPremiumAccess(customerInfo)) {
+      if (!isPremiumActive) {
+        const refreshedInfo = await Purchases.getCustomerInfo();
+
+        isPremiumActive =
+          refreshedInfo?.entitlements?.active?.price_ping_pro?.isActive ===
+          true;
+      }
+
+      if (isPremiumActive) {
         setPurchaseMessage({
           title: "You're Premium! ✨",
           message: "Your Price Ping Premium access is now active.",
           successWarnOrError: 1,
         });
 
-        await onActivatingPremium();
+        setShowPurchaseModal(true);
+        // await onActivatingPremium();
       } else {
         setPurchaseMessage({
-          title: "Purchase pending",
+          title: "Purchase Still Processing",
           message:
-            "Your purchase was processed, but Premium access is not active yet. Please try restoring your purchases.",
+            "Your payment went through, but Premium access isn't ready yet. Wait a moment, then try restoring your purchase.",
           successWarnOrError: 2,
         });
-
-        setShowPurchaseModal(true);
       }
     } catch (error) {
       const purchaseError = error as {
@@ -172,11 +173,18 @@ export default function PaywallScreen() {
         message?: string;
       };
 
-      if (!purchaseError.userCancelled) {
-        setErrorMessage(
-          purchaseError.message ?? "Purchase failed. Please try again.",
-        );
+      if (purchaseError.userCancelled) {
+        return;
       }
+
+      setPurchaseMessage({
+        title: "Purchase Failed",
+        message:
+          "The app store couldn't complete your purchase. Check your payment method, then try again. If you were charged but Premium isn't active, choose Restore Purchases.",
+        successWarnOrError: 3,
+      });
+
+      setShowPurchaseModal(true);
     } finally {
       setPurchasing(false);
     }
@@ -186,33 +194,36 @@ export default function PaywallScreen() {
     if (restoring) return;
 
     setRestoring(true);
-    setErrorMessage("");
 
     try {
       const customerInfo = await restoreSubscriptions();
 
       if (hasPremiumAccess(customerInfo)) {
+        dispatch(
+          setIsUserPremium({
+            trialStartedAt: premiumUser.trialStartedAt,
+            alarmsCreatedCount: premiumUser.alarmsCreatedCount,
+            isPremium: true,
+            paywallVisible: false,
+          }),
+        );
         setPurchaseMessage({
-          title: "Purchases restored",
-          message: "Your Price Ping Premium subscription is active.",
+          title: "Purchase Restored",
+          message: "Your Premium subscription is ready to use.",
           successWarnOrError: 1,
         });
       } else {
         setPurchaseMessage({
-          title: "No active subscription",
+          title: "No Purchase Found",
           message:
-            "We couldn't find an active Premium subscription for this store account.",
+            "We couldn't find a Premium subscription for this store account.",
           successWarnOrError: 2,
         });
       }
 
       setShowPurchaseModal(true);
-    } catch (error) {
-      setErrorMessage(
-        error instanceof Error
-          ? error.message
-          : "Unable to restore purchases. Please try again.",
-      );
+    } catch (err) {
+      console.error(err);
     } finally {
       setRestoring(false);
     }
@@ -405,10 +416,13 @@ export default function PaywallScreen() {
 
           {loading ? (
             <View style={styles.loadingBox}>
-              <ActivityIndicator color={BLUE} size="large" />
-              <Text style={styles.loadingText}>
-                Loading subscription plans…
-              </Text>
+              <LottieView
+                source={require("../../assets/plansloading.json")}
+                style={{ width: "100%", aspectRatio: 1 }}
+                autoPlay
+                loop
+              />
+              <Text style={styles.loadingText}>Loading Subscription Plans</Text>
             </View>
           ) : (
             <View style={styles.plans}>
@@ -431,7 +445,6 @@ export default function PaywallScreen() {
                       key={pkg.identifier}
                       onPress={() => {
                         setSelectedPlan(pkg);
-                        setErrorMessage("");
                       }}
                       accessibilityRole="radio"
                       accessibilityState={{ checked: isSelected }}
@@ -541,7 +554,7 @@ export default function PaywallScreen() {
                   );
                 })}
 
-              {packages.length === 0 && !errorMessage && (
+              {packages.length === 0 && (
                 <View style={styles.emptyPlans}>
                   <View style={styles.emptyPlansIcon}>
                     <Text style={styles.emptyPlansIconText}>◇</Text>
@@ -566,23 +579,21 @@ export default function PaywallScreen() {
 
                   <Text style={styles.configurationNoticeText}>
                     {!hasMonthly && !hasAnnual
-                      ? "Monthly and yearly packages aren't available in this offering."
+                      ? "Monthly and yearly plans aren't available right now."
                       : !hasMonthly
-                        ? "A monthly package isn't available in this offering."
-                        : "A yearly package isn't available in this offering."}{" "}
-                    Check your RevenueCat offering configuration if this is
-                    unexpected.
+                        ? "A monthly plan isn't available right now."
+                        : "A yearly plan isn't available right now."}
                   </Text>
                 </View>
               )}
             </View>
           )}
 
-          {!!errorMessage && (
+          {/* {errorMessage && (
             <View style={styles.errorBox}>
               <Text style={styles.errorIcon}>!</Text>
               <View style={styles.errorCopy}>
-                <Text style={styles.errorTitle}>Something went wrong</Text>
+                <Text style={styles.errorTitle}>Price Ping Premium</Text>
                 <Text style={styles.errorText}>{errorMessage}</Text>
 
                 {!loading && packages.length === 0 && (
@@ -592,56 +603,60 @@ export default function PaywallScreen() {
                 )}
               </View>
             </View>
-          )}
+          )} */}
 
           {/* Purchase CTA */}
-          <Pressable
-            onPress={handlePurchase}
-            disabled={loading || purchasing || !selectedPlan}
-            accessibilityRole="button"
-            accessibilityLabel={
-              selectedPlan
-                ? `Continue with ${selectedPlan.product.title} subscription`
-                : "Choose a subscription plan"
-            }
-            style={({ pressed }) => [
-              styles.ctaOuter,
-              (loading || purchasing || !selectedPlan) && styles.ctaDisabled,
-              pressed && styles.ctaPressed,
-            ]}
-          >
-            <LinearGradient
-              colors={["#3986FF", "#2B77F1", "#1E5ED8"]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.cta}
+          {packages.length != 0 && (
+            <Pressable
+              onPress={handlePurchase}
+              disabled={loading || purchasing || !selectedPlan}
+              accessibilityRole="button"
+              accessibilityLabel={
+                selectedPlan
+                  ? `Continue with ${selectedPlan.product.title} subscription`
+                  : "Choose a subscription plan"
+              }
+              style={({ pressed }) => [
+                styles.ctaOuter,
+                (loading || purchasing || !selectedPlan) && styles.ctaDisabled,
+                pressed && styles.ctaPressed,
+              ]}
             >
-              {purchasing ? (
-                <>
-                  <ActivityIndicator color="#FFFFFF" />
-                  <Text style={styles.ctaText}>Processing purchase…</Text>
-                </>
-              ) : (
-                <>
-                  <View style={styles.ctaIcon}>
-                    <Text style={styles.ctaIconText}>✦</Text>
-                  </View>
+              <LinearGradient
+                colors={["#3986FF", "#2B77F1", "#1E5ED8"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.cta}
+              >
+                {purchasing ? (
+                  <>
+                    <ActivityIndicator color="#FFFFFF" />
+                    <Text style={styles.ctaText}>Processing purchase…</Text>
+                  </>
+                ) : (
+                  <>
+                    <View style={styles.ctaIcon}>
+                      <Text style={styles.ctaIconText}>✦</Text>
+                    </View>
 
-                  <Text style={styles.ctaText}>Unlock Price Ping Pro</Text>
+                    <Text style={styles.ctaText}>Unlock Price Ping Pro</Text>
 
-                  <View style={styles.ctaArrowCircle}>
-                    <Text style={styles.ctaArrow}>→</Text>
-                  </View>
-                </>
-              )}
-            </LinearGradient>
-          </Pressable>
+                    <View style={styles.ctaArrowCircle}>
+                      <Text style={styles.ctaArrow}>→</Text>
+                    </View>
+                  </>
+                )}
+              </LinearGradient>
+            </Pressable>
+          )}
 
-          <Text style={styles.ctaSubtext}>
-            {selectedPlan
-              ? `${selectedPlan.product.priceString} · ${selectedPlan.product.title} plan`
-              : "Choose a plan to continue"}
-          </Text>
+          {packages.length != 0 && (
+            <Text style={styles.ctaSubtext}>
+              {selectedPlan
+                ? `${selectedPlan.product.priceString} · ${selectedPlan.product.title} plan`
+                : "Choose a plan to continue"}
+            </Text>
+          )}
 
           <View style={styles.trustCard}>
             <View style={styles.trustItem}>
@@ -669,11 +684,12 @@ export default function PaywallScreen() {
 
           <Pressable
             onPress={handleRestore}
-            disabled={restoring}
+            disabled={packages.length == 0 || restoring}
             accessibilityRole="button"
             style={({ pressed }) => [
               styles.restoreButton,
               pressed && styles.restoreButtonPressed,
+              (packages.length == 0 || restoring) && styles.ctaDisabled,
             ]}
           >
             {restoring ? (
@@ -1161,15 +1177,14 @@ const styles = StyleSheet.create({
     position: "absolute",
     alignSelf: "center",
     backgroundColor: "#E5EFFF",
-    borderBottomWidth: 2,
-    borderLeftWidth: 2,
-    borderRightWidth: 2,
+    borderBottomWidth: 1.5,
+    borderLeftWidth: 1.5,
+    borderRightWidth: 1.5,
     borderColor: "#C7DBFF",
-    borderBottomLeftRadius: 20,
-    borderBottomRightRadius: 20,
+    borderBottomLeftRadius: 15,
+    borderBottomRightRadius: 15,
     paddingHorizontal: 11,
     paddingVertical: 6,
-    marginBottom: 13,
   },
   bestValueRibbonText: {
     color: BLUE_DARK,

@@ -19,10 +19,24 @@ import { Ionicons } from "@expo/vector-icons";
 import { Navigation, RootStackParamList } from "../navigation/StackNavigator";
 import { data } from "../components/Dropdown";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
+import { useSelector } from "react-redux";
+import { RootState } from "../store/store";
 
 const { width, height } = Dimensions.get("screen");
 
 type PlayAlarmProps = NativeStackScreenProps<RootStackParamList, "PlayAlarm">;
+
+const alarmSounds: Record<string, any> = {
+  'alarm1.mp3': require('../../assets/sounds/alarm1.mp3'),
+  'alarm2.mp3': require('../../assets/sounds/alarm2.mp3'),
+  'alarm3.mp3': require('../../assets/sounds/alarm3.mp3'),
+  'alarm4.mp3': require('../../assets/sounds/bedside.mp3'),
+  'alarm5.mp3': require('../../assets/sounds/dreamcore.mp3'),
+  'alarm6.mp3': require('../../assets/sounds/dreammemory.mp3'),
+  'alarm7.mp3': require('../../assets/sounds/morningjoy.mp3'),
+  'alarm8.mp3': require('../../assets/sounds/oversimplified.mp3'),
+  'alarm9.mp3': require('../../assets/sounds/pianoclock.mp3'),
+};
 
 const PlayAlarm = ({ route }: PlayAlarmProps) => {
   const alarm = route?.params?.alarmToSend;
@@ -31,7 +45,14 @@ const PlayAlarm = ({ route }: PlayAlarmProps) => {
   const selectedImage =
     data.find((item) => item.value === alarm?.symbol)?.image ??
     require("../../assets/coins/bitcoin.png");
-  const alarmPlayer = useAudioPlayer(require("../../assets/sounds/alarm1.mp3"));
+  const currentAlarmSound = useSelector(
+    (state: RootState) => state.app.selectedSound.fileFullName,
+  );
+  console.log(currentAlarmSound);
+  
+  const soundPath = alarmSounds[currentAlarmSound] ?? alarmSounds["alarm1.mp3"];
+
+  const alarmPlayer = useAudioPlayer(soundPath);
 
   const pulse = useRef(new Animated.Value(0)).current;
   const pulse2 = useRef(new Animated.Value(0)).current;

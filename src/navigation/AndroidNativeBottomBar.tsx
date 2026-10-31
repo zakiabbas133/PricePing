@@ -244,15 +244,13 @@ const styles = StyleSheet.create({
   },
   activeCircle: {
     position: "absolute",
-    top: -30,
-    width: 60,
-    height: 60,
+    top: -25,
+    width: 50,
+    height: 50,
     borderRadius: 99,
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "#1677FF",
-    borderWidth: 5,
-    borderColor: "#fff",
   },
 });
 
