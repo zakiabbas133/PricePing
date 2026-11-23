@@ -10,6 +10,7 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
+  Vibration,
   View,
 } from "react-native";
 import { useAudioPlayer } from "expo-audio";
@@ -27,15 +28,15 @@ const { width, height } = Dimensions.get("screen");
 type PlayAlarmProps = NativeStackScreenProps<RootStackParamList, "PlayAlarm">;
 
 const alarmSounds: Record<string, any> = {
-  'alarm1.mp3': require('../../assets/sounds/alarm1.mp3'),
-  'alarm2.mp3': require('../../assets/sounds/alarm2.mp3'),
-  'alarm3.mp3': require('../../assets/sounds/alarm3.mp3'),
-  'alarm4.mp3': require('../../assets/sounds/bedside.mp3'),
-  'alarm5.mp3': require('../../assets/sounds/dreamcore.mp3'),
-  'alarm6.mp3': require('../../assets/sounds/dreammemory.mp3'),
-  'alarm7.mp3': require('../../assets/sounds/morningjoy.mp3'),
-  'alarm8.mp3': require('../../assets/sounds/oversimplified.mp3'),
-  'alarm9.mp3': require('../../assets/sounds/pianoclock.mp3'),
+  "alarm1.mp3": require("../../assets/sounds/alarm1.mp3"),
+  "alarm2.mp3": require("../../assets/sounds/alarm2.mp3"),
+  "alarm3.mp3": require("../../assets/sounds/alarm3.mp3"),
+  "alarm4.mp3": require("../../assets/sounds/bedside.mp3"),
+  "alarm5.mp3": require("../../assets/sounds/dreamcore.mp3"),
+  "alarm6.mp3": require("../../assets/sounds/dreammemory.mp3"),
+  "alarm7.mp3": require("../../assets/sounds/morningjoy.mp3"),
+  "alarm8.mp3": require("../../assets/sounds/oversimplified.mp3"),
+  "alarm9.mp3": require("../../assets/sounds/pianoclock.mp3"),
 };
 
 const PlayAlarm = ({ route }: PlayAlarmProps) => {
@@ -48,8 +49,7 @@ const PlayAlarm = ({ route }: PlayAlarmProps) => {
   const currentAlarmSound = useSelector(
     (state: RootState) => state.app.selectedSound.fileFullName,
   );
-  console.log(currentAlarmSound);
-  
+
   const soundPath = alarmSounds[currentAlarmSound] ?? alarmSounds["alarm1.mp3"];
 
   const alarmPlayer = useAudioPlayer(soundPath);
@@ -184,7 +184,15 @@ const PlayAlarm = ({ route }: PlayAlarmProps) => {
     return () => {};
   }, [alarmPlayer]);
 
+  useEffect(() => {
+    Vibration.vibrate([0, 1200, 1200], true);
+
+    return () => Vibration.cancel();
+  }, []);
+
   const stopAlarm = () => {
+    Vibration.cancel();
+
     try {
       alarmPlayer.pause();
       alarmPlayer.seekTo(0);

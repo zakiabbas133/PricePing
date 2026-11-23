@@ -26,6 +26,7 @@ import DropdownElement from "../components/Dropdown";
 import CustomModal from "../components/CustomModal";
 import useGeneratePrice from "../hooks/useGeneratePrice";
 import CustomApiLoader from "../components/CustomApiLoader";
+import testNotification from "../api/testPost";
 
 type SymbolScreenProps = {
   symbol: string;
@@ -95,7 +96,6 @@ const SymbolScreen = ({ symbol, setSymbol }: SymbolScreenProps) => {
   };
 
   const handleCreateAlarm = async () => {
-    console.log('alarmsCount, isPremium', alarmsCount, isPremium);
     const expired = isTrialExpired(startingDate, alarmsCount, isPremium);
     if (expired) {
       requestAnimationFrame(() => {
@@ -279,10 +279,9 @@ const SymbolScreen = ({ symbol, setSymbol }: SymbolScreenProps) => {
 
             <Pressable
               onPress={() => {
-                setFutureOrSpot("future");
-                console.log('avsbdvasbd');
-                
-                navigation.navigate("PlayAlarm");
+                setFutureOrSpot("future");               
+                // navigation.navigate("PlayAlarm");
+                testNotification();
               }}
               style={[
                 styles.directionButton,

@@ -24,7 +24,7 @@ export const isTrialExpired = (
       !isPremium && alarmsCount >= FREE_ALARM_LIMIT
     );
   } catch (error) {
-    console.log(error);
+    console.error(error);
     throw error;
   }
 };
